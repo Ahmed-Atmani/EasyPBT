@@ -25,6 +25,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const serverName = serverInfo.name;
     const serverId = serverInfo.module;
 
+    // == Hello world command test
+    const helloWorldCommand = vscode.commands.registerCommand(`${serverId}.sayHello`, () => {
+        vscode.window.showInformationMessage('Hello World!');
+    });
+
+    context.subscriptions.push(helloWorldCommand);
+
     // Setup logging
     const outputChannel = createOutputChannel(serverName);
     context.subscriptions.push(outputChannel, registerLogger(outputChannel));

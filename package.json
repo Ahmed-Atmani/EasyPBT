@@ -130,6 +130,11 @@
                 "title": "Restart Server",
                 "category": "EasyPBT",
                 "command": "easypbt.restart"
+            },
+            {
+                "title": "EasyPBT Hello World",
+                "category": "EasyPBT",
+                "command": "easypbt.sayHello"
             }
         ]
     },
