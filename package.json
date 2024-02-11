@@ -132,9 +132,9 @@
                 "command": "easypbt.restart"
             },
             {
-                "title": "EasyPBT Hello World",
+                "title": "Choose PBT Type",
                 "category": "EasyPBT",
-                "command": "easypbt.sayHello"
+                "command": "easypbt.choosePbtType"
             }
         ]
     },

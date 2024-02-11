@@ -17,6 +17,8 @@ import { loadServerDefaults } from './common/setup';
 import { getLSClientTraceLevel } from './common/utilities';
 import { createOutputChannel, onDidChangeConfiguration, registerCommand } from './common/vscodeapi';
 
+import { pbtTypes } from './pbt_types';
+
 let lsClient: LanguageClient | undefined;
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
     // This is required to get server name and module. This should be
@@ -25,12 +27,21 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const serverName = serverInfo.name;
     const serverId = serverInfo.module;
 
-    // == Hello world command test
-    const helloWorldCommand = vscode.commands.registerCommand(`${serverId}.sayHello`, () => {
-        vscode.window.showInformationMessage('Hello World!');
+    // == Choose PBT type command
+    const types = pbtTypes.map((type) => {
+        return {
+            label: type.name,
+            detail: type.description,
+            argument: type.argument,
+        };
     });
 
-    context.subscriptions.push(helloWorldCommand);
+    const choosePbtTypeCommand = vscode.commands.registerCommand(`${serverId}.choosePbtType`, async () => {
+        var selectedType = await vscode.window.showQuickPick(types);
+        console.log(selectedType);
+    });
+
+    context.subscriptions.push(choosePbtTypeCommand);
 
     // Setup logging
     const outputChannel = createOutputChannel(serverName);
