@@ -39,6 +39,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const choosePbtTypeCommand = vscode.commands.registerCommand(`${serverId}.choosePbtType`, async () => {
         var selectedType = await vscode.window.showQuickPick(types);
         console.log(selectedType);
+
+        let editor = vscode.window.activeTextEditor;
+        if (editor) {
+            // if an editor is open
+            let selectedCode = editor.document.getText(editor.selection);
+            console.log(selectedCode);
+        }
     });
 
     context.subscriptions.push(choosePbtTypeCommand);

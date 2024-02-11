@@ -24,4 +24,9 @@ export const pbtTypes = [
         description: 'Some Things Never Change__DESCRIPTION',
         argument: '--idempotent',
     },
+    {
+        name: 'The More Things Change, the More They Stay the Same',
+        description: 'Some Things Never Change__DESCRIPTION',
+        argument: '--idempotent',
+    },
 ];
