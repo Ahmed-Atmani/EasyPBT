@@ -135,6 +135,11 @@
                 "title": "Choose PBT Type",
                 "category": "EasyPBT",
                 "command": "easypbt.choosePbtType"
+            },
+            {
+                "title": "Test Command",
+                "category": "EasyPBT",
+                "command": "easypbt.testCommand"
             }
         ]
     },

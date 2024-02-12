@@ -50,6 +50,32 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     context.subscriptions.push(choosePbtTypeCommand);
 
+    // // == TestCommand
+    // const testCommand2 = vscode.commands.registerCommand(`${serverId}.testCommand`, async () => {
+    //     const response = await lsClient?.sendRequest('test123');
+    //     console.log(response);
+    //     vscode.window.showInformationMessage('received');
+    // });
+
+    // context.subscriptions.push(testCommand2);
+
+    const testCommand = vscode.commands.registerCommand(`${serverId}.testCommand`, async () => {
+        try {
+            const response = await lsClient?.sendRequest('abc');
+            console.log('Response:', response); // Log the response
+            if (response !== undefined) {
+                vscode.window.showInformationMessage('Received response: ' + response);
+            } else {
+                vscode.window.showErrorMessage('No response received or response is undefined');
+            }
+        } catch (error: any) {
+            console.error('Error sending request:', error);
+            vscode.window.showErrorMessage('Error sending request: ' + error.message);
+        }
+    });
+
+    context.subscriptions.push(testCommand);
+
     // Setup logging
     const outputChannel = createOutputChannel(serverName);
     context.subscriptions.push(outputChannel, registerLogger(outputChannel));

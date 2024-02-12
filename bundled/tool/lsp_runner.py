@@ -35,6 +35,11 @@ import lsp_utils as utils
 
 RPC = jsonrpc.create_json_rpc(sys.stdin.buffer, sys.stdout.buffer)
 
+def fac(n):
+    if n == 0:
+        return 1
+    return n * fac(n - 1)
+
 EXIT_NOW = False
 while not EXIT_NOW:
     msg = RPC.receive_data()
@@ -43,6 +48,10 @@ while not EXIT_NOW:
     if method == "exit":
         EXIT_NOW = True
         continue
+
+    if method == "abc":
+        response = {"id": msg["id"], "result": "123"}
+        RPC.send_data(response)
 
     if method == "run":
         is_exception = False
