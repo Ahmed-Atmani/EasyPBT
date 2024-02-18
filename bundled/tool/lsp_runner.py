@@ -49,7 +49,7 @@ while not EXIT_NOW:
         EXIT_NOW = True
         continue
 
-    if method == "abc":
+    if method == "test/command":
         response = {"id": msg["id"], "result": "123"}
         RPC.send_data(response)
 

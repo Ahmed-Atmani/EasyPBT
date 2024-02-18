@@ -61,7 +61,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     const testCommand = vscode.commands.registerCommand(`${serverId}.testCommand`, async () => {
         try {
-            const response = await lsClient?.sendRequest('abc');
+            const response = await lsClient?.sendRequest('test/command', 'arg');
             console.log('Response:', response); // Log the response
             if (response !== undefined) {
                 vscode.window.showInformationMessage('Received response: ' + response);
@@ -100,6 +100,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     traceVerbose(`Full Server Info: ${JSON.stringify(serverInfo)}`);
 
     const runServer = async () => {
+        console.log('###RUNSERVER###');
+
         const interpreter = getInterpreterFromSetting(serverId);
         if (interpreter && interpreter.length > 0) {
             if (checkVersion(await resolveInterpreter(interpreter))) {
@@ -109,12 +111,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             return;
         }
 
+        console.log('###RUNSERVER2###');
+
         const interpreterDetails = await getInterpreterDetails();
         if (interpreterDetails.path) {
             traceVerbose(`Using interpreter from Python extension: ${interpreterDetails.path.join(' ')}`);
             lsClient = await restartServer(serverId, serverName, outputChannel, lsClient);
             return;
         }
+
+        console.log('###RUNSERVER3###');
 
         traceError(
             'Python interpreter missing:\r\n' +

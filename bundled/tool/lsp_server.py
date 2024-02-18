@@ -47,7 +47,7 @@ RUNNER = pathlib.Path(__file__).parent / "lsp_runner.py"
 
 MAX_WORKERS = 5
 LSP_SERVER = server.LanguageServer(
-    name="EasyPBT", version="1.0", max_workers=MAX_WORKERS
+    name="EasyPBT", version="0.0.1", max_workers=MAX_WORKERS
 )
 
 
@@ -68,7 +68,7 @@ TOOL_MODULE = "easypbt"
 
 TOOL_DISPLAY = "EasyPBT"
 
-TOOL_ARGS = []  # default arguments always passed to your tool.
+TOOL_ARGS = ["write"]  # default arguments always passed to your tool.
 
 # **********************************************************
 # Required Language Server Initialization and Exit handlers.
@@ -103,6 +103,12 @@ def on_exit(_params: Optional[Any] = None) -> None:
 def on_shutdown(_params: Optional[Any] = None) -> None:
     """Handle clean up on shutdown."""
     jsonrpc.shutdown_json_rpc()
+
+
+@LSP_SERVER.feature(lsp.TEST_COMMAND)
+def on_test_command(params: Optional[Any] = None) -> None:
+    print("##==##== FROM SERVER TEST 123 ##==##==")
+
 
 
 def _get_global_defaults():
@@ -230,17 +236,7 @@ def _run_tool_on_document(
     argv += TOOL_ARGS + settings["args"] + extra_args
 
     if use_stdin:
-        # TODO: update these to pass the appropriate arguments to provide document contents
-        # to tool via stdin.
-        # For example, for pylint args for stdin looks like this:
-        #     pylint --from-stdin <path>
-        # Here `--from-stdin` path is used by pylint to make decisions on the file contents
-        # that are being processed. Like, applying exclusion rules.
-        # It should look like this when you pass it:
-        #     argv += ["--from-stdin", document.path]
-        # Read up on how your tool handles contents via stdin. If stdin is not supported use
-        # set use_stdin to False, or provide path, what ever is appropriate for your tool.
-        argv += []
+        argv += [] # Insert args to work with raw text instead of file path
     else:
         argv += [document.path]
 
