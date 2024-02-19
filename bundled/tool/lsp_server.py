@@ -132,7 +132,7 @@ def on_test_command(params: Optional[Any] = None):
     result = _get_PBT_and_send(dirName + "." + moduleName, functionNames, pbtType)
 
     # Delete temporary file
-    # os.remove(fileName)
+    os.remove(fileName)
 
     return result
 
