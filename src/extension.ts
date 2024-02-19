@@ -61,10 +61,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     const testCommand = vscode.commands.registerCommand(`${serverId}.testCommand`, async () => {
         try {
-            const response = await lsClient?.sendRequest('test/command', 'arg');
+            const response: any = await lsClient?.sendRequest('test/command', {
+                functions: ['def encode(n: int) -> int:\n\treturn n+1\n', 'def decode(n: int) -> int:\n\treturn n-1\n'],
+                pbtType: '--roundtrip',
+            });
             console.log('Response:', response); // Log the response
             if (response !== undefined) {
                 vscode.window.showInformationMessage('Received response: ' + response);
+                vscode.window.showInformationMessage('Body: ' + response.stdout);
             } else {
                 vscode.window.showErrorMessage('No response received or response is undefined');
             }

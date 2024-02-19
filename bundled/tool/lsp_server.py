@@ -106,8 +106,35 @@ def on_shutdown(_params: Optional[Any] = None) -> None:
 
 
 @LSP_SERVER.feature(lsp.TEST_COMMAND)
-def on_test_command(params: Optional[Any] = None) -> None:
+def on_test_command(params: Optional[Any] = None):
     print("##==##== FROM SERVER TEST 123 ##==##==")
+    print(str(params))
+
+    functions = params.functions
+    pbtType = params.pbtType
+
+    dirName = "easypbt"
+    moduleName = "temp_functions"
+    fileName = dirName + "/" + moduleName + ".py"
+    
+    # # Check if folder exists
+    if not os.path.isdir(dirName):
+        os.mkdir(dirName)
+
+    # Save functions in temporary file
+    f = open(fileName, "a")
+    for func in functions:
+        f.write(func + "\n")
+    f.close()
+
+    # Get PBT
+    functionNames = ["encode", "decode"] # needs to be parsed using AST
+    result = _get_PBT_and_send(dirName + "." + moduleName, functionNames, pbtType)
+
+    # Delete temporary file
+    # os.remove(fileName)
+
+    return result
 
 
 
@@ -379,6 +406,33 @@ def _run_tool(extra_args: Sequence[str]) -> utils.RunResult:
 
     log_to_output(f"\r\n{result.stdout}\r\n")
     return result
+
+
+def _get_PBT_and_send(moduleName, functionNames, pbtType = "") -> utils.RunResult:
+    """Runs Hypothesis' ghostwriter and sends the output back to the client (based on _run_tool)"""
+    argv = ["hypothesis", "write"]
+
+    if pbtType != "":
+        argv += [pbtType] # adds e.g. '--roundtrip'
+
+    for f in functionNames:
+        argv += [moduleName + "." + f]
+    
+    settings = copy.deepcopy(_get_settings_by_document(None))
+    code_workspace = settings["workspaceFS"]
+    cwd = settings["workspaceFS"]
+
+    result = utils.run_path(argv=argv, use_stdin=True, cwd=cwd)
+
+    if result.stderr:
+        log_to_output(result.stderr)
+
+    log_to_output(f"\r\n{result.stdout}\r\n")
+
+    print("COMMAND: " + str(argv))
+
+    return result
+
 
 
 # *****************************************************
