@@ -17,9 +17,10 @@ import { loadServerDefaults } from './common/setup';
 import { getLSClientTraceLevel } from './common/utilities';
 import { createOutputChannel, onDidChangeConfiguration, registerCommand } from './common/vscodeapi';
 
-import { pbtTypes } from './pbt_types';
-
 let lsClient: LanguageClient | undefined;
+
+let pbtTypes: any = null;
+
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
     // This is required to get server name and module. This should be
     // the first thing that we do in this extension.
@@ -28,17 +29,31 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const serverId = serverInfo.module;
 
     // == Choose PBT type command
-    const types = pbtTypes.map((type) => {
-        return {
-            label: type.name,
-            detail: type.description,
-            argument: type.argument,
-        };
-    });
+    // const types = pbtTypes.map((type) => {
+    //     return {
+    //         label: type.name,
+    //         detail: type.description,
+    //         argument: type.argument,
+    //     };
+    // });
 
     const choosePbtTypeCommand = vscode.commands.registerCommand(`${serverId}.choosePbtType`, async () => {
+        const response: any = await lsClient?.sendRequest('custom/getPbtTypes', {});
+
+        console.log('RESPONSE: ' + JSON.stringify(response, null, 4));
+        console.log('STDOUT: ' + JSON.stringify(response.stdout, null, 4));
+
+        const types: any = response.stdout.map((type: any) => {
+            return {
+                label: type.name,
+                detail: type.description,
+                argument: type.argument,
+            };
+        });
+        console.log('RESPONSE: ' + JSON.stringify(response, null, 4));
+
         var selectedType = await vscode.window.showQuickPick(types);
-        console.log(selectedType);
+        console.log('SELECTED: ' + selectedType);
 
         let editor = vscode.window.activeTextEditor;
         if (editor) {
@@ -61,7 +76,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     const testCommand = vscode.commands.registerCommand(`${serverId}.testCommand`, async () => {
         try {
-            const response: any = await lsClient?.sendRequest('test/command', {
+            const response: any = await lsClient?.sendRequest('custom/testCommand', {
                 functions: ['def encode(n: int) -> int:\n\treturn n+1\n', 'def decode(n: int) -> int:\n\treturn n-1\n'],
                 pbtType: '--roundtrip',
             });

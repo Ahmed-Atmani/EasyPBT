@@ -140,6 +140,17 @@
                 "title": "Test Command",
                 "category": "EasyPBT",
                 "command": "easypbt.testCommand"
+            },
+
+            {
+                "title": "Generate PBT for selected function(s)",
+                "category": "EasyPBT",
+                "command": "easypbt.generatePbtForSelectedFunctions"
+            },
+            {
+                "title": "Generate PBT...",
+                "category": "EasyPBT",
+                "command": "easypbt.generatePbt"
             }
         ]
     },

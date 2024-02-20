@@ -141,13 +141,6 @@ class ProcessManager:
                 pass
         self._thread_pool.shutdown(wait=False)
 
-    def send_message(self, method: str, data: str):
-            for i in self._rpc.values():
-                try:
-                    i.send_data({"id": str(uuid.uuid4()), "method": method, "data": data})
-                except:  # pylint: disable=bare-except
-                    pass
-
     def start_process(self, workspace: str, args: Sequence[str], cwd: str) -> None:
         """Starts a process and establishes JSON-RPC communication over stdio."""
         # pylint: disable=consider-using-with
@@ -264,8 +257,3 @@ def run_over_json_rpc(
 def shutdown_json_rpc():
     """Shutdown all JSON-RPC processes."""
     _process_manager.stop_all_processes()
-
-
-def send_message(method, data):
-    """Shutdown all JSON-RPC processes."""
-    _process_manager.send_message(method, data)

@@ -13,6 +13,8 @@ import sysconfig
 import traceback
 from typing import Any, Optional, Sequence
 
+from pbt_types import pbtTypes
+
 
 # **********************************************************
 # Update sys.path before importing any bundled libraries.
@@ -105,11 +107,8 @@ def on_shutdown(_params: Optional[Any] = None) -> None:
     jsonrpc.shutdown_json_rpc()
 
 
-@LSP_SERVER.feature(lsp.TEST_COMMAND)
+@LSP_SERVER.feature(lsp.CUSTOM_TEST_COMMAND)
 def on_test_command(params: Optional[Any] = None):
-    print("##==##== FROM SERVER TEST 123 ##==##==")
-    print(str(params))
-
     functions = params.functions
     pbtType = params.pbtType
 
@@ -136,6 +135,12 @@ def on_test_command(params: Optional[Any] = None):
 
     return result
 
+
+@LSP_SERVER.feature(lsp.CUSTOM_GET_PBT_TYPES)
+def on_get_pbt_types_command(params: Optional[Any] = None):
+    result = utils.RunResult(pbtTypes, "")
+    print("\nTEMPRES: " + str(result))
+    return result
 
 
 def _get_global_defaults():
@@ -419,7 +424,6 @@ def _get_PBT_and_send(moduleName, functionNames, pbtType = "") -> utils.RunResul
         argv += [moduleName + "." + f]
     
     settings = copy.deepcopy(_get_settings_by_document(None))
-    code_workspace = settings["workspaceFS"]
     cwd = settings["workspaceFS"]
 
     result = utils.run_path(argv=argv, use_stdin=True, cwd=cwd)
@@ -429,7 +433,10 @@ def _get_PBT_and_send(moduleName, functionNames, pbtType = "") -> utils.RunResul
 
     log_to_output(f"\r\n{result.stdout}\r\n")
 
-    print("COMMAND: " + str(argv))
+    print("\nCWD: " + str(cwd))
+    print("\nSETTINGS: " + str(settings))
+    print("\nCOMMAND: " + str(argv))
+    print("\nRESULT: " + str(result))
 
     return result
 
