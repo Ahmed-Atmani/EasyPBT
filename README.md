@@ -1,3 +1,65 @@
+# Design of the Extension
+
+
+Entities
+--------
+- Extension (= front-end) EX
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; => Gets user input, shows notifications, error messages, ...
+
+- Language Server (= back-end) LS
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; => Will parse the code
+
+Communication between the two is done using the JSON-RPC protocol
+
+
+Steps
+-----
+### From Command
+By executing the command:
+
+1. EX will send a request to the LS, asking which methods/functions are defined in the current file
+1. LS sends back a list of methods as response
+1. EX prompts which method/function to test and what PBT type to use, and sends it to the LS as a request
+1. LS generates and sends the PBT
+    1. LS copies the method/function in a separate file
+    1. LS runs ghostwriter with the correct type
+    1. The ghostwriter's output is split into two parts: imports and test
+    1. This data is sent back
+    1. *Optional*: LS calculates where (LOC) the PBT should be appended
+1. EX adds the unimported imports only
+1. EX adds the code under the  
+
+### From Selected Method/Function
+By executing the command after selecting the SUT:
+
+1. EX prompts what PBT type to use, and sends it to the LS as a request
+1. LS generates and sends the PBT
+    1. LS copies the method/function in a separate file
+    1. LS runs ghostwriter with the correct type
+    1. The ghostwriter's output is split into two parts: imports and test
+    1. This data **(as well as the original method (e.g. as "original"))** is sent back
+1. EX pastes the original method ++ PBT
+1. EX adds the unimported imports 
+
+
+Optional Features
+-----------------
+- Ask user where to put PBT
+    - under SUT
+    - at the bottom of the file
+    - in a separate file
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; => Optionally in settings, as well as command
+
+- Add button to the menu that pops up when hovering a function 
+
+
+---
+
+---
+
+---
+
+
 # Template for VS Code python tools extensions
 
 This is a template repository to get you started on building a VS Code extension for your favorite python tool. It could be a linter, formatter, or code analysis, or all of those together. This template will give you the basic building blocks you need to build a VS Code extension for it.
