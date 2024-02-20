@@ -14,6 +14,7 @@ import traceback
 from typing import Any, Optional, Sequence
 
 from pbt_types import pbtTypes
+import ast
 
 
 # **********************************************************
@@ -70,6 +71,7 @@ TOOL_MODULE = "easypbt"
 
 TOOL_DISPLAY = "EasyPBT"
 
+TOOL_NAME = ["hypothesis"]
 TOOL_ARGS = ["write"]  # default arguments always passed to your tool.
 
 # **********************************************************
@@ -109,6 +111,7 @@ def on_shutdown(_params: Optional[Any] = None) -> None:
 
 @LSP_SERVER.feature(lsp.CUSTOM_TEST_COMMAND)
 def on_test_command(params: Optional[Any] = None):
+    """Handles the execution of the test command"""
     functions = params.functions
     pbtType = params.pbtType
 
@@ -138,9 +141,14 @@ def on_test_command(params: Optional[Any] = None):
 
 @LSP_SERVER.feature(lsp.CUSTOM_GET_PBT_TYPES)
 def on_get_pbt_types_command(params: Optional[Any] = None):
-    result = utils.RunResult(pbtTypes, "")
-    print("\nTEMPRES: " + str(result))
-    return result
+    """Returns a JSON-RPC response with a list of all PBT types"""
+    return utils.RunResult(pbtTypes, "")
+
+
+@LSP_SERVER.feature(lsp.CUSTOM_GET_ALL_DEFINED_FUNCTIONS_FROM_FILE)
+def on_get_all_defined_functions_from_file(params: Optional[Any] = None):
+    """Returns a JSON-RPC response with a list of all defined functions from given file"""
+    return utils.RunResult(_get_functions_from_source(params.source), "")
 
 
 def _get_global_defaults():
@@ -221,224 +229,41 @@ def _get_settings_by_document(document: workspace.Document | None):
 # *****************************************************
 # Internal execution APIs.
 # *****************************************************
-def _run_tool_on_document(
-    document: workspace.Document,
-    use_stdin: bool = False,
-    extra_args: Optional[Sequence[str]] = None,
-) -> utils.RunResult | None:
-    """Runs tool on the given document.
-
-    if use_stdin is true then contents of the document is passed to the
-    tool via stdin.
-    """
-    if extra_args is None:
-        extra_args = []
-    if str(document.uri).startswith("vscode-notebook-cell"):
-        # Skip notebook cells
-        return None
-
-    if utils.is_stdlib_file(document.path):
-        # Skip standard library python files.
-        return None
-
-    # deep copy here to prevent accidentally updating global settings.
-    settings = copy.deepcopy(_get_settings_by_document(document))
-
-    code_workspace = settings["workspaceFS"]
-    cwd = settings["cwd"]
-
-    use_path = False
-    use_rpc = False
-    if settings["path"]:
-        # 'path' setting takes priority over everything.
-        use_path = True
-        argv = settings["path"]
-    elif settings["interpreter"] and not utils.is_current_interpreter(
-        settings["interpreter"][0]
-    ):
-        # If there is a different interpreter set use JSON-RPC to the subprocess
-        # running under that interpreter.
-        argv = [TOOL_MODULE]
-        use_rpc = True
-    else:
-        # if the interpreter is same as the interpreter running this
-        # process then run as module.
-        argv = [TOOL_MODULE]
-
-    argv += TOOL_ARGS + settings["args"] + extra_args
-
-    if use_stdin:
-        argv += [] # Insert args to work with raw text instead of file path
-    else:
-        argv += [document.path]
-
-    if use_path:
-        # This mode is used when running executables.
-        log_to_output(" ".join(argv))
-        log_to_output(f"CWD Server: {cwd}")
-        result = utils.run_path(
-            argv=argv,
-            use_stdin=use_stdin,
-            cwd=cwd,
-            source=document.source.replace("\r\n", "\n"),
-        )
-        if result.stderr:
-            log_to_output(result.stderr)
-    elif use_rpc:
-        # This mode is used if the interpreter running this server is different from
-        # the interpreter used for running this server.
-        log_to_output(" ".join(settings["interpreter"] + ["-m"] + argv))
-        log_to_output(f"CWD Linter: {cwd}")
-
-        result = jsonrpc.run_over_json_rpc(
-            workspace=code_workspace,
-            interpreter=settings["interpreter"],
-            module=TOOL_MODULE,
-            argv=argv,
-            use_stdin=use_stdin,
-            cwd=cwd,
-            source=document.source,
-        )
-        if result.exception:
-            log_error(result.exception)
-            result = utils.RunResult(result.stdout, result.stderr)
-        elif result.stderr:
-            log_to_output(result.stderr)
-    else:
-        # In this mode the tool is run as a module in the same process as the language server.
-        log_to_output(" ".join([sys.executable, "-m"] + argv))
-        log_to_output(f"CWD Linter: {cwd}")
-        # This is needed to preserve sys.path, in cases where the tool modifies
-        # sys.path and that might not work for this scenario next time around.
-        with utils.substitute_attr(sys, "path", sys.path[:]):
-            try:
-                # TODO: `utils.run_module` is equivalent to running `python -m <pytool-module>`.
-                # If your tool supports a programmatic API then replace the function below
-                # with code for your tool. You can also use `utils.run_api` helper, which
-                # handles changing working directories, managing io streams, etc.
-                # Also update `_run_tool` function and `utils.run_module` in `lsp_runner.py`.
-                result = utils.run_module(
-                    module=TOOL_MODULE,
-                    argv=argv,
-                    use_stdin=use_stdin,
-                    cwd=cwd,
-                    source=document.source,
-                )
-            except Exception:
-                log_error(traceback.format_exc(chain=True))
-                raise
-        if result.stderr:
-            log_to_output(result.stderr)
-
-    log_to_output(f"{document.uri} :\r\n{result.stdout}")
-    return result
-
-
-def _run_tool(extra_args: Sequence[str]) -> utils.RunResult:
-    """Runs tool."""
-    # deep copy here to prevent accidentally updating global settings.
-    settings = copy.deepcopy(_get_settings_by_document(None))
-
-    code_workspace = settings["workspaceFS"]
-    cwd = settings["workspaceFS"]
-
-    use_path = False
-    use_rpc = False
-    if len(settings["path"]) > 0:
-        # 'path' setting takes priority over everything.
-        use_path = True
-        argv = settings["path"]
-    elif len(settings["interpreter"]) > 0 and not utils.is_current_interpreter(
-        settings["interpreter"][0]
-    ):
-        # If there is a different interpreter set use JSON-RPC to the subprocess
-        # running under that interpreter.
-        argv = [TOOL_MODULE]
-        use_rpc = True
-    else:
-        # if the interpreter is same as the interpreter running this
-        # process then run as module.
-        argv = [TOOL_MODULE]
-
-    argv += extra_args
-
-    if use_path:
-        # This mode is used when running executables.
-        log_to_output(" ".join(argv))
-        log_to_output(f"CWD Server: {cwd}")
-        result = utils.run_path(argv=argv, use_stdin=True, cwd=cwd)
-        if result.stderr:
-            log_to_output(result.stderr)
-    elif use_rpc:
-        # This mode is used if the interpreter running this server is different from
-        # the interpreter used for running this server.
-        log_to_output(" ".join(settings["interpreter"] + ["-m"] + argv))
-        log_to_output(f"CWD Linter: {cwd}")
-        result = jsonrpc.run_over_json_rpc(
-            workspace=code_workspace,
-            interpreter=settings["interpreter"],
-            module=TOOL_MODULE,
-            argv=argv,
-            use_stdin=True,
-            cwd=cwd,
-        )
-        if result.exception:
-            log_error(result.exception)
-            result = utils.RunResult(result.stdout, result.stderr)
-        elif result.stderr:
-            log_to_output(result.stderr)
-    else:
-        # In this mode the tool is run as a module in the same process as the language server.
-        log_to_output(" ".join([sys.executable, "-m"] + argv))
-        log_to_output(f"CWD Linter: {cwd}")
-        # This is needed to preserve sys.path, in cases where the tool modifies
-        # sys.path and that might not work for this scenario next time around.
-        with utils.substitute_attr(sys, "path", sys.path[:]):
-            try:
-                # TODO: `utils.run_module` is equivalent to running `python -m <pytool-module>`.
-                # If your tool supports a programmatic API then replace the function below
-                # with code for your tool. You can also use `utils.run_api` helper, which
-                # handles changing working directories, managing io streams, etc.
-                # Also update `_run_tool_on_document` function and `utils.run_module` in `lsp_runner.py`.
-                result = utils.run_module(
-                    module=TOOL_MODULE, argv=argv, use_stdin=True, cwd=cwd
-                )
-            except Exception:
-                log_error(traceback.format_exc(chain=True))
-                raise
-        if result.stderr:
-            log_to_output(result.stderr)
-
-    log_to_output(f"\r\n{result.stdout}\r\n")
-    return result
-
-
 def _get_PBT_and_send(moduleName, functionNames, pbtType = "") -> utils.RunResult:
     """Runs Hypothesis' ghostwriter and sends the output back to the client (based on _run_tool)"""
-    argv = ["hypothesis", "write"]
+    argv = TOOL_NAME + TOOL_ARGS # e.g. ["hypothesis", "write"]
 
+    # Add PBT type (if applicable)
     if pbtType != "":
         argv += [pbtType] # adds e.g. '--roundtrip'
 
+    # Add all functions to test
     for f in functionNames:
         argv += [moduleName + "." + f]
     
+    # Run the command
     settings = copy.deepcopy(_get_settings_by_document(None))
     cwd = settings["workspaceFS"]
-
     result = utils.run_path(argv=argv, use_stdin=True, cwd=cwd)
 
+    # Log errors and output
     if result.stderr:
-        log_to_output(result.stderr)
+        log_error(result.stderr)
 
     log_to_output(f"\r\n{result.stdout}\r\n")
 
-    print("\nCWD: " + str(cwd))
-    print("\nSETTINGS: " + str(settings))
-    print("\nCOMMAND: " + str(argv))
-    print("\nRESULT: " + str(result))
-
     return result
+
+
+def _get_functions_from_source(source: str):
+    tree = ast.parse(source)
+    functions = []
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef):
+            functions += [{"name": node.name, "line": node.lineno}]
+
+    return functions
 
 
 

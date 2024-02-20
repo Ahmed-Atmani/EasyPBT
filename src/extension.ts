@@ -28,7 +28,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const serverName = serverInfo.name;
     const serverId = serverInfo.module;
 
-    // === Choose PBT TYPE
+    // === Choose PBT Type
     const choosePbtTypeCommand = vscode.commands.registerCommand(`${serverId}.choosePbtType`, async () => {
         // PBT Types Caching
         if (pbtTypes === null) {
@@ -47,6 +47,27 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     });
 
     context.subscriptions.push(choosePbtTypeCommand);
+
+    // === Get All Defined Functions in File
+    const getDefinedFunctionsFromFileCommand = vscode.commands.registerCommand(
+        `${serverId}.getDefinedFunctionsFromFile`,
+        async () => {
+            var sourceCode: string = '';
+
+            let editor = vscode.window.activeTextEditor;
+            if (editor) {
+                // if an editor is open
+                sourceCode = editor.document.getText();
+                console.log(sourceCode);
+            }
+
+            const functions: any = await getDefinedFunctions(sourceCode);
+
+            vscode.window.showQuickPick(functions);
+        },
+    );
+
+    context.subscriptions.push(getDefinedFunctionsFromFileCommand);
 
     // === TEST COMMAND
     const testCommand = vscode.commands.registerCommand(`${serverId}.testCommand`, async () => {
@@ -158,4 +179,16 @@ async function getPbtTypes(): Promise<void> {
         };
     });
     return;
+}
+
+async function getDefinedFunctions(source: string): Promise<[{ label: string; detail: string }]> {
+    const response: any = await lsClient?.sendRequest('custom/getDefinedFunctionsFromFile', { source: source });
+    const definedFunctions = await response.stdout.map((cell: any) => {
+        return {
+            label: cell.name,
+            detail: 'line ' + cell.line.toString(),
+        };
+    });
+
+    return definedFunctions;
 }

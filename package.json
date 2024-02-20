@@ -143,7 +143,7 @@
             },
 
             {
-                "title": "Generate PBT for selected function(s)",
+                "title": "Generate PBT for Selected Function(s)",
                 "category": "EasyPBT",
                 "command": "easypbt.generatePbtForSelectedFunctions"
             },
@@ -151,6 +151,11 @@
                 "title": "Generate PBT...",
                 "category": "EasyPBT",
                 "command": "easypbt.generatePbt"
+            },
+            {
+                "title": "Get All Defined Functions From File",
+                "category": "EasyPBT",
+                "command": "easypbt.getDefinedFunctionsFromFile"
             }
         ]
     },
