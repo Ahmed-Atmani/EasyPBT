@@ -19,7 +19,7 @@ import { createOutputChannel, onDidChangeConfiguration, registerCommand } from '
 
 let lsClient: LanguageClient | undefined;
 
-let pbtTypes: any = null;
+let pbtTypes: any = null; // For PBT Types Caching
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
     // This is required to get server name and module. This should be
@@ -28,32 +28,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const serverName = serverInfo.name;
     const serverId = serverInfo.module;
 
-    // == Choose PBT type command
-    // const types = pbtTypes.map((type) => {
-    //     return {
-    //         label: type.name,
-    //         detail: type.description,
-    //         argument: type.argument,
-    //     };
-    // });
-
+    // === Choose PBT TYPE
     const choosePbtTypeCommand = vscode.commands.registerCommand(`${serverId}.choosePbtType`, async () => {
-        const response: any = await lsClient?.sendRequest('custom/getPbtTypes', {});
+        // PBT Types Caching
+        if (pbtTypes === null) {
+            await getPbtTypes();
+        }
 
-        console.log('RESPONSE: ' + JSON.stringify(response, null, 4));
-        console.log('STDOUT: ' + JSON.stringify(response.stdout, null, 4));
-
-        const types: any = response.stdout.map((type: any) => {
-            return {
-                label: type.name,
-                detail: type.description,
-                argument: type.argument,
-            };
-        });
-        console.log('RESPONSE: ' + JSON.stringify(response, null, 4));
-
-        var selectedType = await vscode.window.showQuickPick(types);
-        console.log('SELECTED: ' + selectedType);
+        var selectedType = await vscode.window.showQuickPick(pbtTypes);
+        console.log('SELECTED PBT TYPE: ' + JSON.stringify(selectedType, null, 4));
 
         let editor = vscode.window.activeTextEditor;
         if (editor) {
@@ -65,15 +48,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     context.subscriptions.push(choosePbtTypeCommand);
 
-    // // == TestCommand
-    // const testCommand2 = vscode.commands.registerCommand(`${serverId}.testCommand`, async () => {
-    //     const response = await lsClient?.sendRequest('test123');
-    //     console.log(response);
-    //     vscode.window.showInformationMessage('received');
-    // });
-
-    // context.subscriptions.push(testCommand2);
-
+    // === TEST COMMAND
     const testCommand = vscode.commands.registerCommand(`${serverId}.testCommand`, async () => {
         try {
             const response: any = await lsClient?.sendRequest('custom/testCommand', {
@@ -119,8 +94,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     traceVerbose(`Full Server Info: ${JSON.stringify(serverInfo)}`);
 
     const runServer = async () => {
-        console.log('###RUNSERVER###');
-
         const interpreter = getInterpreterFromSetting(serverId);
         if (interpreter && interpreter.length > 0) {
             if (checkVersion(await resolveInterpreter(interpreter))) {
@@ -129,18 +102,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             }
             return;
         }
-
-        console.log('###RUNSERVER2###');
-
         const interpreterDetails = await getInterpreterDetails();
         if (interpreterDetails.path) {
             traceVerbose(`Using interpreter from Python extension: ${interpreterDetails.path.join(' ')}`);
             lsClient = await restartServer(serverId, serverName, outputChannel, lsClient);
             return;
         }
-
-        console.log('###RUNSERVER3###');
-
         traceError(
             'Python interpreter missing:\r\n' +
                 '[Option 1] Select python interpreter using the ms-python.python.\r\n' +
@@ -179,4 +146,16 @@ export async function deactivate(): Promise<void> {
     if (lsClient) {
         await lsClient.stop();
     }
+}
+
+async function getPbtTypes(): Promise<void> {
+    const response: any = await lsClient?.sendRequest('custom/getPbtTypes', {});
+    pbtTypes = await response.stdout.map((type: any) => {
+        return {
+            label: type.name,
+            detail: type.description,
+            argument: type.argument,
+        };
+    });
+    return;
 }
