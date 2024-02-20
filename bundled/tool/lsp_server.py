@@ -131,7 +131,7 @@ def on_test_command(params: Optional[Any] = None):
 
     # Get PBT
     functionNames = ["encode", "decode"] # needs to be parsed using AST
-    result = _get_PBT_and_send(dirName + "." + moduleName, functionNames, pbtType)
+    result = _get_PBT(dirName + "." + moduleName, functionNames, pbtType)
 
     # Delete temporary file
     os.remove(fileName)
@@ -149,6 +149,40 @@ def on_get_pbt_types_command(params: Optional[Any] = None):
 def on_get_all_defined_functions_from_file(params: Optional[Any] = None):
     """Returns a JSON-RPC response with a list of all defined functions from given file"""
     return utils.RunResult(_get_functions_from_source(params.source), "")
+
+@LSP_SERVER.feature(lsp.CUSTOM_GENERATE_PBT)
+def on_generate_PBT(params: Optional[Any] = None):
+    """Returns a JSON-RPC response with the generated PBT"""
+    # === Parse parameters
+    functions = params.functions
+    pbtType = params.pbtType.argument
+    source = params.source
+
+    # === Write functions to temporary file (hypothesis' ghostwriter only works on python modules)
+    dirName = "easypbt"
+    moduleName = "temp_functions"
+    fileName = dirName + "/" + moduleName + ".py"
+    
+    # Check if folder exists
+    if not os.path.isdir(dirName):
+        os.mkdir(dirName)
+
+    # Save source in temporary file
+    f = open(fileName, "w")
+    # for func in functions:
+    #     f.write(func + "\n")
+    f.write(source)
+    f.close()
+
+    print("\nLIST: " + str(list(map(lambda f: f.name, functions))))
+
+    # === Generate PBT 
+    result = _get_PBT(dirName + "." + moduleName, list(map(lambda f: f.name, functions)), pbtType)
+
+    # === Delete temporary file
+    os.remove(fileName)
+
+    return result
 
 
 def _get_global_defaults():
@@ -229,7 +263,7 @@ def _get_settings_by_document(document: workspace.Document | None):
 # *****************************************************
 # Internal execution APIs.
 # *****************************************************
-def _get_PBT_and_send(moduleName, functionNames, pbtType = "") -> utils.RunResult:
+def _get_PBT(moduleName, functionNames, pbtType = "") -> utils.RunResult:
     """Runs Hypothesis' ghostwriter and sends the output back to the client (based on _run_tool)"""
     argv = TOOL_NAME + TOOL_ARGS # e.g. ["hypothesis", "write"]
 
@@ -240,6 +274,8 @@ def _get_PBT_and_send(moduleName, functionNames, pbtType = "") -> utils.RunResul
     # Add all functions to test
     for f in functionNames:
         argv += [moduleName + "." + f]
+
+    print("\nCOMMAND: " + str(argv))
     
     # Run the command
     settings = copy.deepcopy(_get_settings_by_document(None))

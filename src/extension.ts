@@ -16,6 +16,7 @@ import { checkIfConfigurationChanged, getInterpreterFromSetting } from './common
 import { loadServerDefaults } from './common/setup';
 import { getLSClientTraceLevel } from './common/utilities';
 import { createOutputChannel, onDidChangeConfiguration, registerCommand } from './common/vscodeapi';
+import { Linter } from 'eslint';
 
 let lsClient: LanguageClient | undefined;
 
@@ -28,25 +29,32 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const serverName = serverInfo.name;
     const serverId = serverInfo.module;
 
-    // === Choose PBT Type
-    const choosePbtTypeCommand = vscode.commands.registerCommand(`${serverId}.choosePbtType`, async () => {
-        // PBT Types Caching
-        if (pbtTypes === null) {
-            await getPbtTypes();
-        }
+    // === Generate PBT
+    const generatePbtCommand = vscode.commands.registerCommand(`${serverId}.generatePbt`, async () => {
+        // Prompt SUT
+        const selectedFunction = await promptFunctionToTest();
+        console.log(selectedFunction);
 
-        var selectedType = await vscode.window.showQuickPick(pbtTypes);
-        console.log('SELECTED PBT TYPE: ' + JSON.stringify(selectedType, null, 4));
+        // Prompt PBT type
+        const selectedType = await promptPbtType();
+        console.log(selectedType);
 
-        let editor = vscode.window.activeTextEditor;
-        if (editor) {
-            // if an editor is open
-            let selectedCode = editor.document.getText(editor.selection);
-            console.log(selectedCode);
-        }
+        // Get Source
+        const source = vscode.window.activeTextEditor?.document.getText();
+
+        // Generate PBT
+        const result: any = await lsClient?.sendRequest('custom/generatePBT', {
+            functions: [selectedFunction],
+            pbtType: selectedType,
+            source: source,
+        });
+
+        const pbt = result.stdout;
+
+        await addPbtToEditor(pbt, selectedFunction.lineEnd + 1);
     });
 
-    context.subscriptions.push(choosePbtTypeCommand);
+    context.subscriptions.push(generatePbtCommand);
 
     // === Get All Defined Functions in File
     const getDefinedFunctionsFromFileCommand = vscode.commands.registerCommand(
@@ -181,14 +189,65 @@ async function getPbtTypes(): Promise<void> {
     return;
 }
 
-async function getDefinedFunctions(source: string): Promise<[{ label: string; detail: string }]> {
+async function getDefinedFunctions(source: string): Promise<[{ name: string; lineStart: number; lineEnd: number }]> {
     const response: any = await lsClient?.sendRequest('custom/getDefinedFunctionsFromFile', { source: source });
     const definedFunctions = await response.stdout.map((cell: any) => {
         return {
             label: cell.name,
             detail: 'line ' + cell.lineStart.toString() + '-' + cell.lineEnd.toString(),
+            lineStart: cell.lineStart,
+            lineEnd: cell.lineEnd,
         };
     });
 
     return definedFunctions;
+}
+
+async function promptFunctionToTest(): Promise<{ name: string; lineStart: number; lineEnd: number }> {
+    const editor = vscode.window.activeTextEditor;
+    const source = editor?.document.getText();
+
+    if (source === undefined) {
+        vscode.window.showInformationMessage('The file is empty');
+        return Promise.reject('The file is empty');
+    }
+    const functions: any = await getDefinedFunctions(source);
+    var selectedFunction: any = await vscode.window.showQuickPick(functions);
+
+    if (!selectedFunction) {
+        return Promise.reject('No function selected');
+    }
+
+    return {
+        name: selectedFunction.label,
+        lineStart: selectedFunction.lineStart,
+        lineEnd: selectedFunction.lineEnd,
+    };
+}
+
+async function promptPbtType(): Promise<{ label: string; detail: string; argument: string }> {
+    // PBT Types Caching
+    if (pbtTypes === null) {
+        await getPbtTypes();
+    }
+
+    var selectedType: any = await vscode.window.showQuickPick(pbtTypes);
+
+    return selectedType;
+}
+
+async function addPbtToEditor(pbt: string, lineNumber: number): Promise<void> {
+    const editor = vscode.window.activeTextEditor;
+
+    if (!editor) {
+        vscode.window.showErrorMessage('No Python file is active');
+        return;
+    }
+
+    const line = lineNumber - 1;
+    const lineText = editor.document.lineAt(line).text;
+    const insertPosition = new vscode.Position(line, lineText.length);
+    await editor.edit((editBuilder) => {
+        editBuilder.insert(insertPosition, pbt);
+    });
 }
