@@ -261,7 +261,7 @@ def _get_functions_from_source(source: str):
 
     for node in ast.walk(tree):
         if isinstance(node, ast.FunctionDef):
-            functions += [{"name": node.name, "line": node.lineno}]
+            functions += [{"name": node.name, "lineStart": node.lineno, "lineEnd": node.end_lineno}]
 
     return functions
 

@@ -186,7 +186,7 @@ async function getDefinedFunctions(source: string): Promise<[{ label: string; de
     const definedFunctions = await response.stdout.map((cell: any) => {
         return {
             label: cell.name,
-            detail: 'line ' + cell.line.toString(),
+            detail: 'line ' + cell.lineStart.toString() + '-' + cell.lineEnd.toString(),
         };
     });
 
