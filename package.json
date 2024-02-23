@@ -131,31 +131,11 @@
                 "category": "EasyPBT",
                 "command": "easypbt.restart"
             },
-            {
-                "title": "Choose PBT Type",
-                "category": "EasyPBT",
-                "command": "easypbt.choosePbtType"
-            },
-            {
-                "title": "Test Command",
-                "category": "EasyPBT",
-                "command": "easypbt.testCommand"
-            },
 
-            {
-                "title": "Generate PBT for Selected Function(s)",
-                "category": "EasyPBT",
-                "command": "easypbt.generatePbtForSelectedFunctions"
-            },
             {
                 "title": "Generate PBT...",
                 "category": "EasyPBT",
                 "command": "easypbt.generatePbt"
-            },
-            {
-                "title": "Get All Defined Functions From File",
-                "category": "EasyPBT",
-                "command": "easypbt.getDefinedFunctionsFromFile"
             }
         ]
     },

@@ -31,73 +31,35 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     // === Generate PBT
     const generatePbtCommand = vscode.commands.registerCommand(`${serverId}.generatePbt`, async () => {
-        // Prompt SUT
-        const selectedFunction = await promptFunctionToTest();
-        console.log(selectedFunction);
-
         // Prompt PBT type
         const selectedType = await promptPbtType();
+
+        console.log('Selected type: ');
         console.log(selectedType);
+
+        // Prompt SUT;
+        const selectedFunctions = await promptFunctionsToTest(selectedType.twoFunctions);
+
+        console.log('Selected functions: ');
+        console.log(selectedFunctions);
 
         // Get Source
         const source = vscode.window.activeTextEditor?.document.getText();
 
         // Generate PBT
         const result: any = await lsClient?.sendRequest('custom/generatePBT', {
-            functions: [selectedFunction],
+            functions: selectedFunctions,
             pbtType: selectedType,
             source: source,
         });
 
-        const pbt = result.stdout;
+        const pbt = await result.stdout;
 
-        await addPbtToEditor(pbt, selectedFunction.lineEnd + 1);
+        // await addPbtToEditor(pbt, selectedFunction.lineEnd + 1);
+        await addPbtToEditor(pbt, selectedFunctions[0].lineEnd + 1);
     });
 
     context.subscriptions.push(generatePbtCommand);
-
-    // === Get All Defined Functions in File
-    const getDefinedFunctionsFromFileCommand = vscode.commands.registerCommand(
-        `${serverId}.getDefinedFunctionsFromFile`,
-        async () => {
-            var sourceCode: string = '';
-
-            let editor = vscode.window.activeTextEditor;
-            if (editor) {
-                // if an editor is open
-                sourceCode = editor.document.getText();
-                console.log(sourceCode);
-            }
-
-            const functions: any = await getDefinedFunctions(sourceCode);
-
-            vscode.window.showQuickPick(functions);
-        },
-    );
-
-    context.subscriptions.push(getDefinedFunctionsFromFileCommand);
-
-    // === TEST COMMAND
-    const testCommand = vscode.commands.registerCommand(`${serverId}.testCommand`, async () => {
-        try {
-            const response: any = await lsClient?.sendRequest('custom/testCommand', {
-                functions: ['def encode(n: int) -> int:\n\treturn n+1\n', 'def decode(n: int) -> int:\n\treturn n-1\n'],
-                pbtType: '--roundtrip',
-            });
-            console.log('Response:', response); // Log the response
-            if (response !== undefined) {
-                vscode.window.showInformationMessage('Received response: ' + response);
-                vscode.window.showInformationMessage('Body: ' + response.stdout);
-            } else {
-                vscode.window.showErrorMessage('No response received or response is undefined');
-            }
-        } catch (error: any) {
-            console.error('Error sending request:', error);
-            vscode.window.showErrorMessage('Error sending request: ' + error.message);
-        }
-    });
-
-    context.subscriptions.push(testCommand);
 
     // Setup logging
     const outputChannel = createOutputChannel(serverName);
@@ -178,14 +140,9 @@ export async function deactivate(): Promise<void> {
 }
 
 async function getPbtTypes(): Promise<void> {
-    const response: any = await lsClient?.sendRequest('custom/getPbtTypes', {});
-    pbtTypes = await response.stdout.map((type: any) => {
-        return {
-            label: type.name,
-            detail: type.description,
-            argument: type.argument,
-        };
-    });
+    const result = (await lsClient?.sendRequest('custom/getPbtTypes', {})) as any;
+    pbtTypes = await result.stdout;
+    console.log(pbtTypes);
     return;
 }
 
@@ -203,37 +160,88 @@ async function getDefinedFunctions(source: string): Promise<[{ name: string; lin
     return definedFunctions;
 }
 
-async function promptFunctionToTest(): Promise<{ name: string; lineStart: number; lineEnd: number }> {
+async function promptFunctionsToTest(
+    selectTwoFunctions: boolean,
+): Promise<[{ name: string; lineStart: number; lineEnd: number }]> {
+    // selectMultiple is true when the chosen PBT type requires to have multiple functions
+    // e.g. roundtrip (function and inverse), test oracle (function and oracle), ...
+
     const editor = vscode.window.activeTextEditor;
     const source = editor?.document.getText();
 
+    // Check if file is empty
     if (source === undefined) {
         vscode.window.showInformationMessage('The file is empty');
         return Promise.reject('The file is empty');
     }
-    const functions: any = await getDefinedFunctions(source);
-    var selectedFunction: any = await vscode.window.showQuickPick(functions);
+    const functions: any[] = await getDefinedFunctions(source);
 
-    if (!selectedFunction) {
+    // Check if no functions are defined
+    if (functions.length < 1) {
+        vscode.window.showInformationMessage('There are no functions in this file');
+        return Promise.reject('There are no functions in this file');
+    }
+
+    var selectedFunctions: any = await vscode.window.showQuickPick(functions, {
+        title: 'System Under Test (SUT) selection', // Add your desired title here
+        placeHolder: 'Search a function',
+        canPickMany: selectTwoFunctions,
+    });
+
+    // Check if no function was selected
+    if (selectedFunctions.length < 1) {
         return Promise.reject('No function selected');
     }
 
-    return {
-        name: selectedFunction.label,
-        lineStart: selectedFunction.lineStart,
-        lineEnd: selectedFunction.lineEnd,
-    };
+    // Make list of single function (a list of function has to be returned)
+    if (!selectTwoFunctions) {
+        selectedFunctions = [selectedFunctions];
+    }
+
+    // Check
+    if (selectTwoFunctions && selectedFunctions.length !== 2) {
+        vscode.window.showInformationMessage(
+            'Please select exactly two functions: the function to test and its inverse',
+        );
+        return Promise.reject('Two functions have to be selected');
+    }
+
+    return selectedFunctions.map((selected: any) => {
+        return {
+            name: selected.label,
+            lineStart: selected.lineStart,
+            lineEnd: selected.lineEnd,
+        };
+    });
 }
 
-async function promptPbtType(): Promise<{ label: string; detail: string; argument: string }> {
+async function promptPbtType(): Promise<{
+    typeId: number;
+    name: string;
+    description: string;
+    argument: string;
+    twoFunctions: boolean;
+}> {
     // PBT Types Caching
     if (pbtTypes === null) {
         await getPbtTypes();
     }
 
-    var selectedType: any = await vscode.window.showQuickPick(pbtTypes);
+    var selectedType: any = await vscode.window.showQuickPick(
+        pbtTypes.map((type: any) => {
+            return {
+                label: type.name,
+                detail: type.description,
+                typeId: type.typeId,
+            };
+        }),
+        {
+            title: 'Choose a PBT type',
+            placeHolder: 'Search a PBT type',
+        },
+    );
 
-    return selectedType;
+    return pbtTypes.find((type: any) => type.typeId === selectedType.typeId);
 }
 
 async function addPbtToEditor(pbt: string, lineNumber: number): Promise<void> {
@@ -244,7 +252,7 @@ async function addPbtToEditor(pbt: string, lineNumber: number): Promise<void> {
         return;
     }
 
-    const line = lineNumber - 1;
+    const line = Math.max(0, lineNumber - 1);
     const lineText = editor.document.lineAt(line).text;
     const insertPosition = new vscode.Position(line, lineText.length);
     await editor.edit((editBuilder) => {

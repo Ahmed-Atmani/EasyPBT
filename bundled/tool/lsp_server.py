@@ -159,13 +159,14 @@ def on_generate_PBT(params: Optional[Any] = None):
     source = params.source
 
     # === Write functions to temporary file (hypothesis' ghostwriter only works on python modules)
-    dirName = "easypbt"
     moduleName = "temp_functions"
-    fileName = dirName + "/" + moduleName + ".py"
-    
-    # Check if folder exists
-    if not os.path.isdir(dirName):
-        os.mkdir(dirName)
+    fileName = moduleName + ".py"
+
+    # TODO: Check if file is saved
+    # not saved => append PBT under SUT
+    # saved? => check if test file exists (based on settings)
+    #   exists? => append to file and check imports
+    #   not exist? => create it and append tests there
 
     # Save source in temporary file
     f = open(fileName, "w")
@@ -177,7 +178,12 @@ def on_generate_PBT(params: Optional[Any] = None):
     print("\nLIST: " + str(list(map(lambda f: f.name, functions))))
 
     # === Generate PBT 
-    result = _get_PBT(dirName + "." + moduleName, list(map(lambda f: f.name, functions)), pbtType)
+    result = _get_PBT(moduleName, list(map(lambda f: f.name, functions)), pbtType)
+    
+    if result.stderr != '':
+        log_error("Ghostwriter error:\n" + result.stderr)
+
+    
 
     # === Delete temporary file
     os.remove(fileName)
@@ -300,8 +306,6 @@ def _get_functions_from_source(source: str):
             functions += [{"name": node.name, "lineStart": node.lineno, "lineEnd": node.end_lineno}]
 
     return functions
-
-
 
 # *****************************************************
 # Logging and notification.
