@@ -170,12 +170,8 @@ def on_generate_PBT(params: Optional[Any] = None):
 
     # Save source in temporary file
     f = open(fileName, "w")
-    # for func in functions:
-    #     f.write(func + "\n")
     f.write(source)
     f.close()
-
-    print("\nLIST: " + str(list(map(lambda f: f.name, functions))))
 
     # === Generate PBT 
     result = _get_PBT(moduleName, list(map(lambda f: f.name, functions)), pbtType)
@@ -281,8 +277,6 @@ def _get_PBT(moduleName, functionNames, pbtType = "") -> utils.RunResult:
     for f in functionNames:
         argv += [moduleName + "." + f]
 
-    print("\nCOMMAND: " + str(argv))
-    
     # Run the command
     settings = copy.deepcopy(_get_settings_by_document(None))
     cwd = settings["workspaceFS"]

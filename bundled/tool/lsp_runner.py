@@ -48,11 +48,7 @@ while not EXIT_NOW:
     if method == "exit":
         EXIT_NOW = True
         continue
-
-    if method == "test/command":
-        response = {"id": msg["id"], "result": "123"}
-        RPC.send_data(response)
-
+    
     if method == "run":
         is_exception = False
         # This is needed to preserve sys.path, pylint modifies
