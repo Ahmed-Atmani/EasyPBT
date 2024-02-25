@@ -286,6 +286,7 @@ def _get_PBT(moduleName, functionNames, pbtType = "") -> utils.RunResult:
     if result.stderr:
         log_error(result.stderr)
 
+    print("\nSETTINGS: " + str(settings))
     log_to_output(f"\r\n{result.stdout}\r\n")
 
     return result

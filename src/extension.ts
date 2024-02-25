@@ -12,13 +12,21 @@ import {
     resolveInterpreter,
 } from './common/python';
 import { restartServer } from './common/server';
-import { checkIfConfigurationChanged, getInterpreterFromSetting } from './common/settings';
+import {
+    checkIfConfigurationChanged,
+    getExtensionSettings,
+    getGlobalSettings,
+    getInterpreterFromSetting,
+    getWorkspaceSettings,
+} from './common/settings';
 import { loadServerDefaults } from './common/setup';
 import { getLSClientTraceLevel } from './common/utilities';
-import { createOutputChannel, onDidChangeConfiguration, registerCommand } from './common/vscodeapi';
-import { Linter } from 'eslint';
+import { createOutputChannel, getConfiguration, onDidChangeConfiguration, registerCommand } from './common/vscodeapi';
 
 let lsClient: LanguageClient | undefined;
+const extensionName: string = 'easypbt';
+const publisherName: string = 'Ahmed-Atmani';
+const namespace: string = extensionName + '.' + publisherName;
 
 let pbtTypes: any = null; // For PBT Types Caching
 
@@ -31,6 +39,30 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     // === Generate PBT
     const generatePbtCommand = vscode.commands.registerCommand(`${serverId}.generatePbt`, async () => {
+        const settings = await getExtensionSettings(namespace);
+        const settings2 = await getGlobalSettings(namespace);
+        const settings3 = await getWorkspaceSettings(namespace, (vscode.workspace.workspaceFolders as any)[0]);
+        const config = await getConfiguration(namespace);
+        const test = config.get<string>('testFileNamePattern');
+
+        console.log('EXTENSION SETTINGS: ');
+        console.log(settings);
+
+        console.log('GLOBAL SETTINGS: ');
+        console.log(settings2);
+
+        console.log('WORKSPACE SETTINGS: ');
+        console.log(settings3);
+
+        console.log('ENTIRE CONFIG: ');
+        console.log(config);
+
+        console.log('ENTRY: ');
+        console.log(test);
+
+        console.log('NAMESPACE: ');
+        console.log(namespace);
+
         // Prompt PBT type
         const selectedType = await promptPbtType();
 

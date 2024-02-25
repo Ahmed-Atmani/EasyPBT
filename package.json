@@ -1,22 +1,22 @@
 {
     "name": "easypbt",
     "displayName": "EasyPBT",
-    "description": "Linting support for python files using `easypbt`.",
+    "description": "Easily generate property-based tests for your Python projects using `easypbt`.",
     "version": "2022.0.0-dev",
     "preview": true,
     "serverInfo": {
         "name": "EasyPBT",
         "module": "easypbt"
     },
-    "publisher": "Ahmed Atmani",
+    "publisher": "Ahmed-Atmani",
     "license": "MIT",
-    "homepage": "https://github.com/<my-github>/<my-extension-project>",
+    "homepage": "https://github.com/Ahmed-Atmani/EasyPBT",
     "repository": {
         "type": "git",
-        "url": "https://github.com/<my-github>/<my-extension-project>.git"
+        "url": "https://github.com/Ahmed-Atmani/EasyPBT.git"
     },
     "bugs": {
-        "url": "https://github.com/<my-github>/<my-extension-project>/issues"
+        "url": "https://github.com/Ahmed-Atmani/EasyPBT/issues"
     },
     "galleryBanner": {
         "color": "#1e415e",
@@ -24,15 +24,16 @@
     },
     "keywords": [
         "python",
-        "easypbt"
+        "easypbt",
+        "property-based testing",
+        "testing"
     ],
     "engines": {
         "vscode": "^1.78.0"
     },
     "categories": [
         "Programming Languages",
-        "Linters",
-        "Formatters"
+        "Testing"
     ],
     "extensionDependencies": [
         "ms-python.python"
@@ -64,6 +65,12 @@
     "contributes": {
         "configuration": {
             "properties": {
+                "easypbt.testFileNamePattern": {
+                    "default": "_test",
+                    "description": "The naming scheme of the test files to be recognised and created.\n e.g. \"_test\" -> module_test.py",
+                    "scope": "resource",
+                    "type": "string"
+                },
                 "easypbt.args": {
                     "default": [],
                     "description": "Arguments passed in. Each argument is a separate item in the array.",

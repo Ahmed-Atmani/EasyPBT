@@ -6,6 +6,7 @@ import { getInterpreterDetails } from './python';
 import { getConfiguration, getWorkspaceFolders } from './vscodeapi';
 
 export interface ISettings {
+    testFileNamePattern: string;
     cwd: string;
     workspace: string;
     args: string[];
@@ -62,6 +63,7 @@ export async function getWorkspaceSettings(
     }
 
     const workspaceSetting = {
+        testFileNamePattern: config.get<string>('testFileNamePattern') ?? 'not found',
         cwd: workspace.uri.fsPath,
         workspace: workspace.uri.toString(),
         args: resolveVariables(config.get<string[]>(`args`) ?? [], workspace),
@@ -90,6 +92,7 @@ export async function getGlobalSettings(namespace: string, includeInterpreter?: 
     }
 
     const setting = {
+        testFileNamePattern: getGlobalValue<string>(config, 'testFileNamePattern', '_test'),
         cwd: process.cwd(),
         workspace: process.cwd(),
         args: getGlobalValue<string[]>(config, 'args', []),
@@ -103,6 +106,7 @@ export async function getGlobalSettings(namespace: string, includeInterpreter?: 
 
 export function checkIfConfigurationChanged(e: ConfigurationChangeEvent, namespace: string): boolean {
     const settings = [
+        `${namespace}.testFileNamePattern`,
         `${namespace}.args`,
         `${namespace}.path`,
         `${namespace}.interpreter`,
