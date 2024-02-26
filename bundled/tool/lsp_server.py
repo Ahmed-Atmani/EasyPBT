@@ -112,31 +112,7 @@ def on_shutdown(_params: Optional[Any] = None) -> None:
 @LSP_SERVER.feature(lsp.CUSTOM_TEST_COMMAND)
 def on_test_command(params: Optional[Any] = None):
     """Handles the execution of the test command"""
-    functions = params.functions
-    pbtType = params.pbtType
-
-    dirName = "easypbt"
-    moduleName = "temp_functions"
-    fileName = dirName + "/" + moduleName + ".py"
-    
-    # # Check if folder exists
-    if not os.path.isdir(dirName):
-        os.mkdir(dirName)
-
-    # Save functions in temporary file
-    f = open(fileName, "a")
-    for func in functions:
-        f.write(func + "\n")
-    f.close()
-
-    # Get PBT
-    functionNames = ["encode", "decode"] # needs to be parsed using AST
-    result = _get_PBT(dirName + "." + moduleName, functionNames, pbtType)
-
-    # Delete temporary file
-    os.remove(fileName)
-
-    return result
+    return {"stdout": "this is a test response"}
 
 
 @LSP_SERVER.feature(lsp.CUSTOM_GET_PBT_TYPES)
@@ -153,10 +129,12 @@ def on_get_all_defined_functions_from_file(params: Optional[Any] = None):
 @LSP_SERVER.feature(lsp.CUSTOM_GENERATE_PBT)
 def on_generate_PBT(params: Optional[Any] = None):
     """Returns a JSON-RPC response with the generated PBT"""
+
     # === Parse parameters
     functions = params.functions
     pbtType = params.pbtType.argument
     source = params.source
+    testFileNamePattern = params.testFileNamePattern
 
     # === Write functions to temporary file (hypothesis' ghostwriter only works on python modules)
     moduleName = "temp_functions"
@@ -168,21 +146,25 @@ def on_generate_PBT(params: Optional[Any] = None):
     #   exists? => append to file and check imports
     #   not exist? => create it and append tests there
 
-    # Save source in temporary file
+    # === Save source to temporary file
     f = open(fileName, "w")
     f.write(source)
     f.close()
 
     # === Generate PBT 
-    result = _get_PBT(moduleName, list(map(lambda f: f.name, functions)), pbtType)
+    (isError, pbt) = _get_PBT(moduleName, list(map(lambda f: f.name, functions)), pbtType)
     
-    if result.stderr != '':
-        log_error("Ghostwriter error:\n" + result.stderr)
-
-    
-
     # === Delete temporary file
     os.remove(fileName)
+    
+    # === Return result
+    if isError:
+        log_error("Ghostwriter error:\n" + pbt)
+        return utils.RunResult("", pbt)
+    
+    result = {}
+    result["stdout"] = pbt 
+    result["isError"] = False
 
     return result
 
@@ -266,7 +248,10 @@ def _get_settings_by_document(document: workspace.Document | None):
 # Internal execution APIs.
 # *****************************************************
 def _get_PBT(moduleName, functionNames, pbtType = "") -> utils.RunResult:
-    """Runs Hypothesis' ghostwriter and sends the output back to the client (based on _run_tool)"""
+    """Runs Hypothesis' ghostwriter and sends the output back to the client
+    Returns: (ISeRROR, PBT | ERROR)"""
+
+    # === Create command
     argv = TOOL_NAME + TOOL_ARGS # e.g. ["hypothesis", "write"]
 
     # Add PBT type (if applicable)
@@ -277,19 +262,23 @@ def _get_PBT(moduleName, functionNames, pbtType = "") -> utils.RunResult:
     for f in functionNames:
         argv += [moduleName + "." + f]
 
-    # Run the command
+    # === Run the command
     settings = copy.deepcopy(_get_settings_by_document(None))
     cwd = settings["workspaceFS"]
     result = utils.run_path(argv=argv, use_stdin=True, cwd=cwd)
 
-    # Log errors and output
-    if result.stderr:
-        log_error(result.stderr)
+    # === Check for error/output
+    pbt = result.stdout
+    error = result.stderr
+    isError = False
 
-    print("\nSETTINGS: " + str(settings))
-    log_to_output(f"\r\n{result.stdout}\r\n")
+    if error:
+        log_error(error)
+        isError = True
 
-    return result
+    log_to_output(f"\r\n{pbt}\r\n")
+
+    return (isError, pbt if not isError else error)
 
 
 def _get_functions_from_source(source: str):

@@ -29,6 +29,7 @@ const publisherName: string = 'Ahmed-Atmani';
 const namespace: string = extensionName + '.' + publisherName;
 
 let pbtTypes: any = null; // For PBT Types Caching
+let testFileNamePattern: string = '_test';
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
     // This is required to get server name and module. This should be
@@ -39,50 +40,53 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     // === Generate PBT
     const generatePbtCommand = vscode.commands.registerCommand(`${serverId}.generatePbt`, async () => {
-        const settings = await getExtensionSettings(namespace);
-        const settings2 = await getGlobalSettings(namespace);
-        const settings3 = await getWorkspaceSettings(namespace, (vscode.workspace.workspaceFolders as any)[0]);
-        const config = await getConfiguration(namespace);
-        const test = config.get<string>('testFileNamePattern');
+        // const settings = await getExtensionSettings(namespace);
+        // const settings2 = await getGlobalSettings(namespace);
+        // const settings3 = await getWorkspaceSettings(namespace, (vscode.workspace.workspaceFolders as any)[0]);
+        // const config = await getConfiguration(namespace);
+        // const test = config.get<string>('testFileNamePattern');
 
-        console.log('EXTENSION SETTINGS: ');
-        console.log(settings);
+        // console.log('EXTENSION SETTINGS: ');
+        // console.log(settings);
 
-        console.log('GLOBAL SETTINGS: ');
-        console.log(settings2);
+        // console.log('GLOBAL SETTINGS: ');
+        // console.log(settings2);
 
-        console.log('WORKSPACE SETTINGS: ');
-        console.log(settings3);
+        // console.log('WORKSPACE SETTINGS: ');
+        // console.log(settings3);
 
-        console.log('ENTIRE CONFIG: ');
-        console.log(config);
+        // console.log('ENTIRE CONFIG: ');
+        // console.log(config);
 
-        console.log('ENTRY: ');
-        console.log(test);
+        // console.log('ENTRY: ');
+        // console.log(test);
 
-        console.log('NAMESPACE: ');
-        console.log(namespace);
+        // console.log('NAMESPACE: ');
+        // console.log(namespace);
 
-        // Prompt PBT type
+        // == Prompt PBT type
         const selectedType = await promptPbtType();
 
         console.log('Selected type: ');
         console.log(selectedType);
 
-        // Prompt SUT;
+        // == Prompt SUT;
         const selectedFunctions = await promptFunctionsToTest(selectedType.twoFunctions);
 
         console.log('Selected functions: ');
         console.log(selectedFunctions);
 
-        // Get Source
+        // == Get Source
         const source = vscode.window.activeTextEditor?.document.getText();
+        const fileName = vscode.window.activeTextEditor?.document.fileName;
 
-        // Generate PBT
+        // == Generate PBT
         const result: any = await lsClient?.sendRequest('custom/generatePBT', {
             functions: selectedFunctions,
             pbtType: selectedType,
             source: source,
+            fileName: fileName,
+            testFileNamePattern: testFileNamePattern,
         });
 
         const pbt = await result.stdout;
