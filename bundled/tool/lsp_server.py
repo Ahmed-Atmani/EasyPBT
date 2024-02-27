@@ -167,20 +167,22 @@ def on_generate_PBT(params: Optional[Any] = None):
 
     # Merge import structures
     newImports = testFileImports + pbtImports
-    newTestFileContents = rewriteImports(testFileContents, newImports) + "\n\n" + removeImports(pbt)
-
-    print("imports: " + str(newImports))
+    newTestFileContents = rewriteImports(testFileContents, newImports) + "\n\n"
 
     # === Write to test file
     testFile = open(testFileName, "w")
     testFile.write(newTestFileContents)
     testFile.close()
 
+    # === Create vscode snippet 
+    snippet = makeSnippetFromPbt(removeImports(pbt))
+
+
     # === Return result
     result = {}
-    result["stdout"] = pbt 
     result["isError"] = False
-    result["newImports"] = newImports.toSource()
+    result["pbtSnippet"] = snippet 
+    result["testFileName"] = os.path.dirname(filePath) + "/" + testFileName
 
     return result
 

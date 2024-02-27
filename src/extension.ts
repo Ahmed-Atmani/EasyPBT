@@ -92,18 +92,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         console.log('RESULT: ');
         console.log(result);
 
-        const pbt = await result.stdout;
+        const isError: boolean = result.isError;
+        const pbtSnippet = result.pbtSnippet;
+        const testFileName: string = result.testFileName;
 
         // await addPbtToEditor(pbt, selectedFunctions[0].lineEnd + 1); // Adds pbt under the (first) function
 
-        vscode.window.showInformationMessage(pbt);
-
         // Get test file name and open file
-        // Go to snippet placeholders
-        // const testFile: string = "";
-        // vscode.workspace.openTextDocument(testFile).then(doc => {
-        //     vscode.window.showTextDocument(doc);
-        //   });
+        const testDocument = await vscode.workspace.openTextDocument(vscode.Uri.file(testFileName));
+        const editor = await vscode.window.showTextDocument(testDocument);
+        await editor.insertSnippet(new vscode.SnippetString(pbtSnippet));
     });
 
     context.subscriptions.push(generatePbtCommand);

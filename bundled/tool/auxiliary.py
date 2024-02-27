@@ -1,4 +1,5 @@
 import ast
+import re
 
 
 class MaybeAlias:
@@ -131,8 +132,23 @@ def removeImports(source: str):
             tree.body.remove(node)
     return ast.unparse(tree)    
 
+def removeComments(source: str):
+    return ast.unparse(ast.parse(source))
 
+def makeSnippetFromPbt(pbt: str):
+    i = 1
 
+    def makePlaceholder():
+        nonlocal i
+        temp = "$" + "{" + str(i) + ":st.nothing()}"
+        i += 1
+        return temp
+    
+    def replace(match):
+        return makePlaceholder()
+
+    # return pbt.replace("st.nothing()", makePlaceholder()) + "\n\n"
+    return re.sub(r"st\.nothing\(\)", replace, pbt) + "\n\n"
 
 def makeImportStructure(source: str) -> ImportStructure:
     """Returns the import structure of a Python source file"""
@@ -222,6 +238,20 @@ x = 50"""
 
 expr4 = """from math import *
 x = 50"""
+
+noTypePbtExample = """# This test code was written by the `hypothesis.extra.ghostwriter` module
+# and is provided under the Creative Commons Zero public domain dedication. 
+import sample 
+import unittest 
+from hypothesis import given, strategies as st 
+
+# TODO: replace st.nothing() with an appropriate strategy 
+class TestIdempotentFac(unittest.TestCase): 
+    @given(n=st.nothing()) 
+    def test_idempotent_fac(self, n): 
+        result = sample.fac(n=n) 
+        repeat = sample.fac(n=result) 
+        self.assertEqual(result, repeat)"""
 
 # DEBUG
 
