@@ -78,21 +78,32 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
         // == Get Source
         const source = vscode.window.activeTextEditor?.document.getText();
-        const fileName = vscode.window.activeTextEditor?.document.fileName;
+        const filePath = vscode.window.activeTextEditor?.document.fileName;
 
         // == Generate PBT
         const result: any = await lsClient?.sendRequest('custom/generatePBT', {
             functions: selectedFunctions,
             pbtType: selectedType,
             source: source,
-            fileName: fileName,
+            filePath: filePath,
             testFileNamePattern: testFileNamePattern,
         });
 
+        console.log('RESULT: ');
+        console.log(result);
+
         const pbt = await result.stdout;
 
-        // await addPbtToEditor(pbt, selectedFunction.lineEnd + 1);
-        await addPbtToEditor(pbt, selectedFunctions[0].lineEnd + 1);
+        // await addPbtToEditor(pbt, selectedFunctions[0].lineEnd + 1); // Adds pbt under the (first) function
+
+        vscode.window.showInformationMessage(pbt);
+
+        // Get test file name and open file
+        // Go to snippet placeholders
+        // const testFile: string = "";
+        // vscode.workspace.openTextDocument(testFile).then(doc => {
+        //     vscode.window.showTextDocument(doc);
+        //   });
     });
 
     context.subscriptions.push(generatePbtCommand);

@@ -14,6 +14,7 @@ import traceback
 from typing import Any, Optional, Sequence
 
 from pbt_types import pbtTypes
+from auxiliary import *
 import ast
 
 
@@ -134,37 +135,52 @@ def on_generate_PBT(params: Optional[Any] = None):
     functions = params.functions
     pbtType = params.pbtType.argument
     source = params.source
+    filePath = params.filePath
     testFileNamePattern = params.testFileNamePattern
 
-    # === Write functions to temporary file (hypothesis' ghostwriter only works on python modules)
-    moduleName = "temp_functions"
-    fileName = moduleName + ".py"
-
-    # TODO: Check if file is saved
-    # not saved => append PBT under SUT
-    # saved? => check if test file exists (based on settings)
-    #   exists? => append to file and check imports
-    #   not exist? => create it and append tests there
-
-    # === Save source to temporary file
-    f = open(fileName, "w")
-    f.write(source)
-    f.close()
-
     # === Generate PBT 
+    # Run ghostwriter
+    fileName = os.path.basename(filePath)
+    moduleName = fileName[:-3]
     (isError, pbt) = _get_PBT(moduleName, list(map(lambda f: f.name, functions)), pbtType)
     
-    # === Delete temporary file
-    os.remove(fileName)
-    
-    # === Return result
+    # Return error
     if isError:
         log_error("Ghostwriter error:\n" + pbt)
         return utils.RunResult("", pbt)
     
+    # Get PBT import structure
+    pbtImports = makeImportStructure(pbt)
+
+    
+    # === Compute imports
+    # Read test file
+    testFileName = getTestFileName(fileName, testFileNamePattern)
+    testFileContents = ""
+    if os.path.isfile(testFileName):
+        testFile = open(testFileName, "r")
+        testFileContents = testFile.read()
+        testFile.close()
+
+    # Get current import structure of test file
+    testFileImports = makeImportStructure(testFileContents)
+
+    # Merge import structures
+    newImports = testFileImports + pbtImports
+    newTestFileContents = rewriteImports(testFileContents, newImports) + "\n\n" + removeImports(pbt)
+
+    print("imports: " + str(newImports))
+
+    # === Write to test file
+    testFile = open(testFileName, "w")
+    testFile.write(newTestFileContents)
+    testFile.close()
+
+    # === Return result
     result = {}
     result["stdout"] = pbt 
     result["isError"] = False
+    result["newImports"] = newImports.toSource()
 
     return result
 
@@ -176,6 +192,7 @@ def _get_global_defaults():
         "args": GLOBAL_SETTINGS.get("args", []),
         "importStrategy": GLOBAL_SETTINGS.get("importStrategy", "useBundled"),
         "showNotifications": GLOBAL_SETTINGS.get("showNotifications", "off"),
+        "testFileNamePattern":  GLOBAL_SETTINGS.get("testFileNamePattern", "_test"),
     }
 
 
@@ -261,6 +278,8 @@ def _get_PBT(moduleName, functionNames, pbtType = "") -> utils.RunResult:
     # Add all functions to test
     for f in functionNames:
         argv += [moduleName + "." + f]
+
+    print("COMMAND: " + str(argv))
 
     # === Run the command
     settings = copy.deepcopy(_get_settings_by_document(None))
