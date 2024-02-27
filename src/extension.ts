@@ -98,10 +98,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
         // await addPbtToEditor(pbt, selectedFunctions[0].lineEnd + 1); // Adds pbt under the (first) function
 
-        // Get test file name and open file
+        // == Insert PBT snippet at the end of the test file
         const testDocument = await vscode.workspace.openTextDocument(vscode.Uri.file(testFileName));
         const editor = await vscode.window.showTextDocument(testDocument);
-        await editor.insertSnippet(new vscode.SnippetString(pbtSnippet));
+        const document: any = editor.document;
+        const lastLine = document.lineAt(document.lineCount - 1);
+        const endPosition = new vscode.Position(document.lineCount - 1, lastLine.range.end.character); // Adjusted position
+        const selection = new vscode.Selection(endPosition, endPosition);
+        await editor.insertSnippet(new vscode.SnippetString(pbtSnippet), selection);
     });
 
     context.subscriptions.push(generatePbtCommand);
