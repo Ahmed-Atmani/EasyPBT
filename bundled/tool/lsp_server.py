@@ -304,13 +304,33 @@ def _get_PBT(moduleName, functionNames, pbtType = "") -> utils.RunResult:
 
 def _get_functions_from_source(source: str):
     tree = ast.parse(source)
-    functions = []
+    functions = {}
 
+    # Iteration through all nodes of class node
+    def getClassMethods(classNode: ast.ClassDef):
+        for node in ast.walk(classNode):
+           if isinstance(node, ast.FunctionDef):
+            fullName = classNode.name + "." + node.name
+            functions[fullName] = {"name": classNode.name + "." + node.name, "lineStart": node.lineno, "lineEnd": node.end_lineno, "class": classNode.name, "method": node.name}
+
+    # Checks if function already added (because it's a method)
+    def isAlreadyDefined(line):
+        for f in functions.values():
+            if f["lineStart"] == line:
+                return True
+        return False
+
+    # Iteration through all tree nodes
     for node in ast.walk(tree):
+        if isinstance(node, ast.ClassDef):
+            getClassMethods(node)
+            continue
         if isinstance(node, ast.FunctionDef):
-            functions += [{"name": node.name, "lineStart": node.lineno, "lineEnd": node.end_lineno}]
+            if not isAlreadyDefined(node.lineno):
+                functions[node.name] = {"name": node.name, "lineStart": node.lineno, "lineEnd": node.end_lineno, "class": "", "method": ""}
 
-    return functions
+    return list(functions.values())
+
 
 # *****************************************************
 # Logging and notification.
