@@ -1,6 +1,6 @@
 import ast
 import re
-
+from supported_strategies import supportedStrategies
 
 class MaybeAlias:
     def __init__(self, name, alias = None) -> None:
@@ -138,14 +138,28 @@ def removeComments(source: str):
 def makeSnippetFromPbt(pbt: str):
     i = 1
 
-    def makePlaceholder():
+    # def makeStrategyPlaceholder():
+    #     nonlocal i
+    #     temp = "$" + "{" + str(i) + ":st.nothing()}"
+    #     i += 1
+    #     return temp
+
+    def makeStrategyPlaceholder():
         nonlocal i
-        temp = "$" + "{" + str(i) + ":st.nothing()}"
+        # temp = "${" + str(i) + "|option1,option2,option3|}"
+        temp = "${" + str(i) + "|"
+        
+        for strat in supportedStrategies.values():
+            temp += strat + ","
+
+        temp = temp[:-1] # remove last comma
+        temp += "|}"
+
         i += 1
         return temp
     
     def replace(match):
-        return makePlaceholder()
+        return makeStrategyPlaceholder()
 
     # return pbt.replace("st.nothing()", makePlaceholder()) + "\n\n"
     return re.sub(r"st\.nothing\(\)", replace, pbt) + "\n\n"
