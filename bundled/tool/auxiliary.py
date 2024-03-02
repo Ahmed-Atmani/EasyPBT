@@ -138,30 +138,19 @@ def removeComments(source: str):
 def makeSnippetFromPbt(pbt: str):
     i = 1
 
-    # def makeStrategyPlaceholder():
-    #     nonlocal i
-    #     temp = "$" + "{" + str(i) + ":st.nothing()}"
-    #     i += 1
-    #     return temp
-
     def makeStrategyPlaceholder():
         nonlocal i
-        # temp = "${" + str(i) + "|option1,option2,option3|}"
         temp = "${" + str(i) + "|"
-        
         for strat in supportedStrategies.values():
             temp += strat + ","
-
-        temp = temp[:-1] # remove last comma
+        temp = temp[:-1]
         temp += "|}"
-
         i += 1
         return temp
     
     def replace(match):
         return makeStrategyPlaceholder()
 
-    # return pbt.replace("st.nothing()", makePlaceholder()) + "\n\n"
     return re.sub(r"st\.nothing\(\)", replace, pbt) + "\n\n"
 
 def makeImportStructure(source: str) -> ImportStructure:
