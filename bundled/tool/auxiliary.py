@@ -135,7 +135,61 @@ def removeImports(source: str):
 def removeComments(source: str):
     return ast.unparse(ast.parse(source))
 
-def makeSnippetFromPbt(pbt: str):
+def makeSnippetFromPbt(pbt: str, sut: str):
+    pbt = removeComments(pbt)
+
+    if not "st.nothing()" in pbt:
+        return pbt
+    
+    # Start of snippet
+    strategyName = getPbtName(pbt) + "_strategy"
+    customStrategy = "def " + strategyName + "():\n\t"
+
+    # Add arguments
+    args = getSutArgs(sut)
+
+    for arg in args:
+        customStrategy += arg.arg + " = st.nothing()\n\t"
+
+    customStrategy += "return st.builds("
+
+    for arg in args:
+        customStrategy += arg.arg + "=" + arg.arg + ", "
+
+    customStrategy = customStrategy[:-2] # remove last comma
+    customStrategy += ")"
+
+
+    # Replace st.nothing() with snippet placeholders
+    return replaceNothingStrategyWithPlaceholder(customStrategy) + "\n" + pbt
+    
+
+def getSutFromSource(source: str, functions: str):
+    """For now it only returns the first function"""
+    tree = ast.parse(source)
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef):
+            return ast.unparse(node)
+
+
+def getSutArgs(sut: str):
+    tree = ast.parse(sut)
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef):
+            return node.args.posonlyargs + node.args.args
+
+def getPbtName(pbt: str) -> str:
+    tree = ast.parse(pbt)
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef):
+            return node.name
+    
+    return ""
+
+def replaceNothingStrategyWithPlaceholder(src: str):
     i = 1
 
     def makeStrategyPlaceholder():
@@ -151,7 +205,25 @@ def makeSnippetFromPbt(pbt: str):
     def replace(match):
         return makeStrategyPlaceholder()
 
-    return re.sub(r"st\.nothing\(\)", replace, pbt) + "\n\n"
+    return re.sub(r"st\.nothing\(\)", replace, src) + "\n\n"
+
+# def makeSnippetFromPbt(pbt: str):
+#     i = 1
+
+#     def makeStrategyPlaceholder():
+#         nonlocal i
+#         temp = "${" + str(i) + "|"
+#         for strat in supportedStrategies.values():
+#             temp += strat + ","
+#         temp = temp[:-1]
+#         temp += "|}"
+#         i += 1
+#         return temp
+    
+#     def replace(match):
+#         return makeStrategyPlaceholder()
+
+#     return re.sub(r"st\.nothing\(\)", replace, pbt) + "\n\n"
 
 def makeImportStructure(source: str) -> ImportStructure:
     """Returns the import structure of a Python source file"""

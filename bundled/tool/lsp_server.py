@@ -175,7 +175,7 @@ def on_generate_PBT(params: Optional[Any] = None):
     testFile.close()
 
     # === Create vscode snippet 
-    snippet = makeSnippetFromPbt(removeImports(pbt))
+    snippet = makeSnippetFromPbt(removeImports(pbt), getSutFromSource(source, functions))
 
 
     # === Return result

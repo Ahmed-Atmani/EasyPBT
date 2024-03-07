@@ -4,5 +4,5 @@ supportedStrategies = {
     "characters": "st.characters()",
     "strings": "st.text()",
     "booleans": "st.booleans()",
-    "lists": "st.list()",
+    "lists": "st.lists()",
 }
