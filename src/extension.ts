@@ -22,6 +22,7 @@ import {
 import { loadServerDefaults } from './common/setup';
 import { getLSClientTraceLevel } from './common/utilities';
 import { createOutputChannel, getConfiguration, onDidChangeConfiguration, registerCommand } from './common/vscodeapi';
+import { Console } from 'console';
 
 let lsClient: LanguageClient | undefined;
 const extensionName: string = 'easypbt';
@@ -93,8 +94,21 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         console.log(result);
 
         const isError: boolean = result.isError;
-        const pbtSnippet = result.pbtSnippet;
+        var pbtSnippet = result.pbtSnippet;
         const testFileName: string = result.testFileName;
+        const functionParameters = result.functionParameters;
+        const pbt = result.pbt;
+        const functions = result.functions;
+
+        const customArgStrategyZip = await promptArgsCustomStrategy(functionParameters);
+
+        const result2: any = await lsClient?.sendRequest('custom/generateSnippet', {
+            pbt: pbt,
+            customArgStrategyZip: customArgStrategyZip,
+            functions: functions,
+        });
+
+        pbtSnippet = result2.pbtSnippet;
 
         // await addPbtToEditor(pbt, selectedFunctions[0].lineEnd + 1); // Adds pbt under the (first) function
 
@@ -291,6 +305,42 @@ async function promptPbtType(): Promise<{
     );
 
     return pbtTypes.find((type: any) => type.typeId === selectedType.typeId);
+}
+
+async function promptArgsCustomStrategy(
+    args: any,
+): Promise<{ argsBooleanZip: { name: string; customStrategy: boolean }[] }> {
+    var selectedArgs: any = await vscode.window.showQuickPick(
+        args.map((arg: any) => {
+            return {
+                label: arg,
+            };
+        }),
+        {
+            title: 'Select the PBT arguments that would need a custom input generation strategy',
+            placeHolder: 'Search an argument',
+            canPickMany: true,
+        },
+    );
+
+    var result = args.map((arg: any) => {
+        return {
+            name: arg,
+            useCustomStrategy: selectedArgs.map((x: any) => x.label).includes(arg) ? true : false,
+        };
+    });
+
+    console.log('===');
+    console.log('Args: ');
+    console.log(args);
+
+    console.log('Selected: ');
+    console.log(selectedArgs);
+
+    console.log('Result: ');
+    console.log(result);
+
+    return result;
 }
 
 async function addPbtToEditor(pbt: string, lineNumber: number): Promise<void> {

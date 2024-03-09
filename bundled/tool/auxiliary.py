@@ -135,7 +135,7 @@ def removeImports(source: str):
 def removeComments(source: str):
     return ast.unparse(ast.parse(source))
 
-def makeSnippetFromPbt(pbt: str):
+def replaceNothingPlaceholder(pbt: str):
     i = 1
 
     def makeStrategyPlaceholder():
@@ -206,6 +206,76 @@ def split_generated_code(pbt):
             tree.body.remove(node)
 
     return (ast.unparse(tree), importNodes)
+
+def getParameters(pbt):
+    tree = ast.parse(pbt)
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef):
+            temp = list(map(lambda x: x.arg, node.args.posonlyargs + node.args.args))
+            temp.remove("self") # Should stay in case the SUT is a class method
+            return temp
+
+# def makeCustomGenerators(customStrategyFunctions, sutName):
+#     def createCustomStrategy(argName):
+#         strategyName = "strategyFor_" + argName + "_in_" + sutName
+#         strategy = "def " + strategyName + "():\n\t"
+#         strategy += "return st.nothing()\n\n"
+#         return strategy, strategyName
+
+#     strategiesString = ""
+#     strategiesNames = []
+#     for function in customStrategyFunctions:
+#         strategy, name = createCustomStrategy(function)
+#         strategiesString += strategy
+#         strategiesNames += name
+    
+
+#     return strategiesString, strategiesNames
+
+def makeCustomGenerators(customArgStrategyZip, sutName):
+    def createCustomStrategy(argName):
+        strategyName = "strategyFor_" + argName + "_in_" + sutName
+        strategy = "def " + strategyName + "():\n\t"
+        strategy += "return st.nothing()\n\n"
+        return strategy, strategyName
+
+    strategiesString = "" # source of all strategies combined
+    strategiesNames = [] # name of custom strategy function
+    argNames = [] # names of args
+
+    for name, makeCustomStrategy in customArgStrategyZip:
+        argNames += [name]
+        if makeCustomStrategy:
+            strategySource, strategyName = createCustomStrategy(name)
+            strategiesString += strategySource
+            strategiesNames += [strategyName]
+        else:
+            strategiesNames += ["st.nothing"]
+
+    print("\n")
+    print(customArgStrategyZip)
+    print(argNames)
+    print(strategiesNames)
+
+
+    return strategiesString, argNames, strategiesNames
+
+def addCustomStrategyPlaceholders(pbt, argNames, strategiesNames):
+    tree = ast.parse(pbt)
+
+    def makeStrategyCall(strategy):
+        return ast.Call(func=ast.Name(id=strategy, ctx=ast.Load()), args=[], keywords=[])
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+            if isinstance(node.func.value, ast.Name) and node.func.value.id == "st" and node.func.attr == "nothing":
+                node.func = makeStrategyCall(strategiesNames[0]).func
+                strategiesNames = strategiesNames[1:]
+
+    return ast.unparse(tree)
+            
+
 
 
 # Test expression

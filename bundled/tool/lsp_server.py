@@ -175,16 +175,46 @@ def on_generate_PBT(params: Optional[Any] = None):
     testFile.close()
 
     # === Create vscode snippet 
-    snippet = makeSnippetFromPbt(removeImports(pbt))
+    snippet = replaceNothingPlaceholder(removeImports(pbt))
 
 
     # === Return result
     result = {}
     result["isError"] = False
+    result["pbt"] = pbt
     result["pbtSnippet"] = snippet 
     result["testFileName"] = os.path.dirname(filePath) + "/" + testFileName
+    result["functionParameters"] = getParameters(pbt)
+    result["functions"] = functions
 
     return result
+
+@LSP_SERVER.feature(lsp.CUSTOM_GENERATE_SNIPPET)
+def on_make_snippet(params: Optional[Any] = None):
+    pbt = params.pbt
+    customArgStrategyZip = params.customArgStrategyZip
+    functions = params.functions
+
+    # Get functions that need strategy
+    customStrategyFunctions = []
+    for name, needsCustomStrategy in customArgStrategyZip:
+        if needsCustomStrategy:
+            customStrategyFunctions += [name]
+
+    sutName = list(map(lambda f: f[0], functions))[0]
+
+    strategiesString, argNames, strategiesNames = makeCustomGenerators(customArgStrategyZip, sutName)
+    # strategiesString, strategiesNames = makeCustomGenerators(customStrategyFunctions, sutName)
+    finalPbt = addCustomStrategyPlaceholders(removeImports(pbt), argNames, strategiesNames)
+
+    snippet = replaceNothingPlaceholder(strategiesString + finalPbt)
+
+    result = {}
+    result["isError"] = False
+    result["pbtSnippet"] = snippet 
+
+    return result
+
 
 
 def _get_global_defaults():
