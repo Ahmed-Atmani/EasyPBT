@@ -216,23 +216,6 @@ def getParameters(pbt):
             temp.remove("self") # Should stay in case the SUT is a class method
             return temp
 
-# def makeCustomGenerators(customStrategyFunctions, sutName):
-#     def createCustomStrategy(argName):
-#         strategyName = "strategyFor_" + argName + "_in_" + sutName
-#         strategy = "def " + strategyName + "():\n\t"
-#         strategy += "return st.nothing()\n\n"
-#         return strategy, strategyName
-
-#     strategiesString = ""
-#     strategiesNames = []
-#     for function in customStrategyFunctions:
-#         strategy, name = createCustomStrategy(function)
-#         strategiesString += strategy
-#         strategiesNames += name
-    
-
-#     return strategiesString, strategiesNames
-
 def makeCustomGenerators(customArgStrategyZip, sutName):
     def createCustomStrategy(argName):
         strategyName = "strategyFor_" + argName + "_in_" + sutName

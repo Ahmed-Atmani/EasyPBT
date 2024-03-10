@@ -204,9 +204,7 @@ def on_make_snippet(params: Optional[Any] = None):
     sutName = list(map(lambda f: f[0], functions))[0]
 
     strategiesString, argNames, strategiesNames = makeCustomGenerators(customArgStrategyZip, sutName)
-    # strategiesString, strategiesNames = makeCustomGenerators(customStrategyFunctions, sutName)
     finalPbt = addCustomStrategyPlaceholders(removeImports(pbt), argNames, strategiesNames)
-
     snippet = replaceNothingPlaceholder(strategiesString + finalPbt)
 
     result = {}
