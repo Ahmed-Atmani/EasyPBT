@@ -41,30 +41,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     // === Generate PBT
     const generatePbtCommand = vscode.commands.registerCommand(`${serverId}.generatePbt`, async () => {
-        // const settings = await getExtensionSettings(namespace);
-        // const settings2 = await getGlobalSettings(namespace);
-        // const settings3 = await getWorkspaceSettings(namespace, (vscode.workspace.workspaceFolders as any)[0]);
-        // const config = await getConfiguration(namespace);
-        // const test = config.get<string>('testFileNamePattern');
-
-        // console.log('EXTENSION SETTINGS: ');
-        // console.log(settings);
-
-        // console.log('GLOBAL SETTINGS: ');
-        // console.log(settings2);
-
-        // console.log('WORKSPACE SETTINGS: ');
-        // console.log(settings3);
-
-        // console.log('ENTIRE CONFIG: ');
-        // console.log(config);
-
-        // console.log('ENTRY: ');
-        // console.log(test);
-
-        // console.log('NAMESPACE: ');
-        // console.log(namespace);
-
         // == Prompt PBT type
         const selectedType = await promptPbtType();
 
@@ -110,6 +86,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
         pbtSnippet = result2.pbtSnippet;
 
+        await refreshFileContents();
+
         // await addPbtToEditor(pbt, selectedFunctions[0].lineEnd + 1); // Adds pbt under the (first) function
 
         // == Insert PBT snippet at the end of the test file
@@ -121,8 +99,49 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         const selection = new vscode.Selection(endPosition, endPosition);
         await editor.insertSnippet(new vscode.SnippetString(pbtSnippet), selection);
     });
-
     context.subscriptions.push(generatePbtCommand);
+
+    const generateExampleCommand = vscode.commands.registerCommand(`${serverId}.generateExample`, async () => {
+        // == Prompt SUT;
+        const selectedFunction = await promptFunctionsToTest(false);
+
+        console.log('Selected function: ');
+        console.log(selectedFunction);
+
+        // == Get Source
+        const pbtSource = vscode.window.activeTextEditor?.document.getText();
+        const pbtFilePath = vscode.window.activeTextEditor?.document.fileName;
+
+        // == Generate PBT
+        const result: any = await lsClient?.sendRequest('custom/generateExample', {
+            selectedFunction: selectedFunction,
+            pbtSource: pbtSource,
+            pbtFilePath: pbtFilePath,
+        });
+
+        const isError: boolean = result.isError;
+        var exampleSnippet = result.exampleSnippet;
+        const line = result.line - 3;
+        const column = result.column;
+        const refresh = result.refresh;
+
+        console.log('Snippet: ' + exampleSnippet);
+        console.log('location: ' + [line, column]);
+
+        if (refresh) {
+            await refreshFileContents();
+        }
+
+        // == Insert snippet in the right place
+        const testDocument = await vscode.workspace.openTextDocument(vscode.Uri.file(pbtFilePath as string));
+        const editor = await vscode.window.showTextDocument(testDocument);
+        const document: any = editor.document;
+        const lastLine = document.lineAt(line);
+        const endPosition = new vscode.Position(line, lastLine.range.end.character); // Adjusted position
+        const selection = new vscode.Selection(endPosition, endPosition);
+        await editor.insertSnippet(new vscode.SnippetString(exampleSnippet), selection);
+    });
+    context.subscriptions.push(generateExampleCommand);
 
     // Setup logging
     const outputChannel = createOutputChannel(serverName);
@@ -357,4 +376,17 @@ async function addPbtToEditor(pbt: string, lineNumber: number): Promise<void> {
     await editor.edit((editBuilder) => {
         editBuilder.insert(insertPosition, pbt);
     });
+}
+
+async function refreshFileContents() {
+    const editor = vscode.window.activeTextEditor;
+    if (editor) {
+        const uri = editor.document.uri;
+        const viewColumn = editor.viewColumn;
+        await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+        await vscode.workspace.openTextDocument(uri).then((newDocument) => {
+            vscode.window.showTextDocument(newDocument, viewColumn);
+        });
+        vscode.window.showInformationMessage('File contents refreshed.');
+    }
 }

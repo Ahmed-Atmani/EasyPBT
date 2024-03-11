@@ -213,6 +213,63 @@ def on_make_snippet(params: Optional[Any] = None):
 
     return result
 
+@LSP_SERVER.feature(lsp.CUSTOM_GENERATE_EXAMPLE)
+def on_make_example(params: Optional[Any]=None):
+    selectedPbt = params.selectedFunction[0]
+    pbtSource = params.pbtSource
+    pbtFilePath = params.pbtFilePath
+
+
+    # === Add example in imports
+
+    # Read test file
+    testFileName = os.path.basename(pbtFilePath)
+    testFileContents = ""
+    if os.path.isfile(testFileName):
+        testFile = open(testFileName, "r")
+        testFileContents = testFile.read()
+        testFile.close()
+
+    # Get current import structure of test file
+    testFileImports = makeImportStructure(testFileContents)
+
+    alreadyHasExampleImport = testFileImports.containsName("hypothesis", "example")
+
+    if not alreadyHasExampleImport:
+        # Create import structure for example
+        exampleImport = makeImportStructure("from hypothesis import example")
+
+        # Merge import structures
+        newImports = testFileImports + exampleImport
+        newTestFileContents = rewriteImports(testFileContents, newImports) + "\n\n"
+
+        # Write to test file
+        testFile = open(testFileName, "w")
+        testFile.write(newTestFileContents)
+        testFile.close()
+
+    # === Get PBT
+    pbtName = selectedPbt.name.split(".")[::-1][0]
+    pbt, line, col = fishOutPbt(pbtSource, pbtName)
+
+    # === Parse out arguments
+    # from @given 
+    args = getArgsFromPbt(pbt)
+    print("ARGS: ", args)
+
+    # === Create @example() snippet
+    snippet = "\n" + createExampleSnippet(args)
+
+    # === Return snippet and paste location
+    result = {}
+    result["isError"] = False
+    result["exampleSnippet"] = snippet 
+    result["line"] = line
+    result["column"] = col
+    result["refresh"] = not alreadyHasExampleImport
+
+    return result
+
 
 
 def _get_global_defaults():

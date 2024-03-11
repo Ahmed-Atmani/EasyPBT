@@ -143,6 +143,11 @@
                 "title": "Generate PBT...",
                 "category": "EasyPBT",
                 "command": "easypbt.generatePbt"
+            },
+            {
+                "title": "Add an explicit set of values to be generated",
+                "category": "EasyPBT",
+                "command": "easypbt.generateExample"
             }
         ]
     },
