@@ -264,7 +264,7 @@ def on_make_example(params: Optional[Any]=None):
     result = {}
     result["isError"] = False
     result["exampleSnippet"] = snippet 
-    result["line"] = line
+    result["line"] = line + 1
     result["column"] = col
     result["refresh"] = not alreadyHasExampleImport
 
