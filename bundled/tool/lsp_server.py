@@ -13,9 +13,10 @@ import sysconfig
 import traceback
 from typing import Any, Optional, Sequence
 
-from pbt_types import pbtTypes
+from pbt_types import *
 from auxiliary import *
 import ast
+import hypothesis.extra.ghostwriter as gw
 
 
 # **********************************************************
@@ -133,7 +134,7 @@ def on_generate_PBT(params: Optional[Any] = None):
 
     # === Parse parameters
     functions = params.functions
-    pbtType = params.pbtType.argument
+    pbtType = params.pbtType
     source = params.source
     filePath = params.filePath
     testFileNamePattern = params.testFileNamePattern
@@ -142,12 +143,20 @@ def on_generate_PBT(params: Optional[Any] = None):
     # Run ghostwriter
     fileName = os.path.basename(filePath)
     moduleName = fileName[:-3]
-    (isError, pbt) = _get_PBT(moduleName, list(map(lambda f: f.name, functions)), pbtType)
+    # (isError, pbt) = _get_PBT(moduleName, list(map(lambda f: f.name, functions)), pbtType)
     
+    sutNames = list(map(lambda f: f.name, functions))
+    sutSourceList = getSutSourceList(source, sutNames)
+    print("\n\nSOURCELIST: ", sutSourceList)
+    (isError, pbt) = _get_PBT(sutNames, sutSourceList, pbtType.typeId)
+
     # Return error
     if isError:
         log_error("Ghostwriter error:\n" + pbt)
-        return utils.RunResult("", pbt)
+        result = {}
+        result["isError"] = True
+        result["pbt"] = pbt
+        return result
     
     # Get PBT import structure
     pbtImports = makeImportStructure(pbt)
@@ -351,40 +360,69 @@ def _get_settings_by_document(document: workspace.Document | None):
 # *****************************************************
 # Internal execution APIs.
 # *****************************************************
-def _get_PBT(moduleName, functionNames, pbtType = "") -> utils.RunResult:
-    """Runs Hypothesis' ghostwriter and sends the output back to the client
-    Returns: (ISeRROR, PBT | ERROR)"""
+def _get_PBT(sutNames, sutSourceList, pbtTypeId: PbtTypeId):
+    """Runs Hypothesis' ghostwriter and sends the output back to the client"""
 
-    # === Create command
-    argv = TOOL_NAME + TOOL_ARGS # e.g. ["hypothesis", "write"]
+    # === Create function objects
+    # ghostwriter module only works with evaluated functions
+    # ghostwriter cli only works with source strings (what we are currently working with)
+    evaluatedSouceList = getEvaluatedSouceList(sutNames, sutSourceList)
 
-    # Add PBT type (if applicable)
-    if pbtType != "":
-        argv += [pbtType] # adds e.g. '--roundtrip'
-
-    # Add all functions to test
-    for f in functionNames:
-        argv += [moduleName + "." + f]
-
-    print("COMMAND: " + str(argv))
-
-    # === Run the command
-    settings = copy.deepcopy(_get_settings_by_document(None))
-    cwd = settings["workspaceFS"]
-    result = utils.run_path(argv=argv, use_stdin=True, cwd=cwd)
-
-    # === Check for error/output
-    pbt = result.stdout
-    error = result.stderr
+    # === Generate PBT
+    pbt = ""
     isError = False
 
-    if error:
-        log_error(error)
+    match pbtTypeId:
+
+        ### == Supported by Hypothesis Ghostwriter
+        case PbtTypeId.DIFF_PATH_SAME_DEST: # binary_operation (with only associativity enabled)
+            pass
+
+        case PbtTypeId.ROUNDTRIP.value: # roundtrip
+            pbt = gw.roundtrip(*evaluatedSouceList)
+            print("\n\nROUNDTRIP: ", pbt)
+            pass
+
+        case PbtTypeId.TEST_ORACLE.value: # equivalent
+            pass
+
+        case PbtTypeId.MODEL_BASED.value: # equivalent
+            pass
+
+        case PbtTypeId.THE_MORE_THINGS_CHANGE.value: # idempotent
+            pass
+
+        ### == Partially supported by Hypothesis Ghostwriter
+        case PbtTypeId.SOME_THINGS_NEVER_CHANGE.value: # Based on idempotent (input musn't be changed)
+            pass
+
+        case PbtTypeId.METAMORPHIC_PROP.value: # Based on equivalent (add extra step to test e.g. compiler output instead of compiler itself)
+            pass
+
+        ### == Not supported by Hypothesis Ghostwriter
+        case PbtTypeId.SOLVE_SMALLER_PROBLEM_FIRST.value: # 
+            pass
+
+        case PbtTypeId.HARD_TO_PROVE.value: # add dummy strategy and dummy checker predicate
+            pass
+
+        case PbtTypeId.WITHIN_EXPECTED_BOUNDS.value: # add bounds assertions
+            pass
+
+        case PbtTypeId.UNKNOWN.value: # magic
+            pass
+
+    if isError:
         isError = True
+        log_error(pbt)
+    else:
+        log_to_output(f"\r\n{pbt}\r\n")
 
-    log_to_output(f"\r\n{pbt}\r\n")
+    result = {}
+    result["isError"] = isError
+    result["pbt"] = pbt
 
-    return (isError, pbt if not isError else error)
+    return result
 
 
 def _get_functions_from_source(source: str):

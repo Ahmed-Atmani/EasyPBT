@@ -296,6 +296,55 @@ def addCustomStrategyPlaceholders(pbt, argNames, strategiesNames):
     return ast.unparse(tree)
             
 
+def getSutSourceList(source: str, sutNames: list[str]):
+    tree = ast.parse(source)
+    result = []
+
+    def isClassMethod(name: str):
+        return '.' in name
+    
+    def lookupFunction(tree, funcName):
+        nonlocal result
+        for node in ast.walk(tree):
+            if isinstance(node, ast.FunctionDef):
+                if node.name == funcName:
+                    result += [ast.unparse(node)]
+                    return
+
+    def lookupClass(tree, className, methodName):
+        nonlocal result
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ClassDef):
+                if node.name == className:
+                    # return lookupFunction(node, methodName) # This line returns the method, not the entire class
+                    result += [ast.unparse(node)]
+                    return
+
+    for sut in sutNames:
+        if isClassMethod(sut):
+            (className, methodName) = sut.split('.')
+            lookupClass(tree, className, methodName)
+        else:
+            lookupFunction(tree, sut)
+
+    return result
+        
+def getEvaluatedSouceList(sutNames, sutSourceList):
+    # Make copy of environment and evaluate the source
+    env = globals().copy()
+    fullSource = "\n".join(sutSourceList)
+    exec(fullSource, env)
+    
+    # Put all evaluated functions in a list
+    result = []
+    for name in sutNames:
+        result += [env[name]]
+
+    return result
+
+
+    
+
 
 
 # Test expression
