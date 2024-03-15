@@ -416,10 +416,14 @@ def _get_PBT(sutNames, sutSourceList, pbtType, moduleName, functionNames):
     pbt = ""
     isError = False
 
+    print("\n\n\n===TypeId", pbtType.typeId)
+
     match pbtType.typeId:
 
         ### == Supported by Hypothesis Ghostwriter
-        case PbtTypeId.DIFF_PATH_SAME_DEST: # binary_operation (with only associativity enabled)
+        case PbtTypeId.DIFF_PATH_SAME_DEST.value: # binary_operation (with only associativity enabled)
+            temp = gw.binary_operation(*evaluatedSouceList, commutative=True, identity=False, associative=False)
+            pbt = processDiffPathSameDest(temp, moduleName, functionNames[0])
             pass
 
         case PbtTypeId.ROUNDTRIP.value: # roundtrip
@@ -430,12 +434,18 @@ def _get_PBT(sutNames, sutSourceList, pbtType, moduleName, functionNames):
             pass
 
         case PbtTypeId.TEST_ORACLE.value: # equivalent
+            isError, pbt = getPbtUsingCli(moduleName, functionNames, pbtType.argument)
+
             pass
 
         case PbtTypeId.MODEL_BASED.value: # equivalent
+            isError, pbt = getPbtUsingCli(moduleName, functionNames, pbtType.argument)
+
             pass
 
         case PbtTypeId.THE_MORE_THINGS_CHANGE.value: # idempotent
+            isError, pbt = getPbtUsingCli(moduleName, functionNames, pbtType.argument)
+
             pass
 
         ### == Partially supported by Hypothesis Ghostwriter
@@ -464,6 +474,8 @@ def _get_PBT(sutNames, sutSourceList, pbtType, moduleName, functionNames):
     else:
         log_to_output(f"\r\n{pbt}\r\n")
 
+    print("\n\nRESULTING PBT: ")
+    print(pbt)
     return isError, pbt
 
 

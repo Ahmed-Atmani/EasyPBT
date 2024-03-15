@@ -136,7 +136,8 @@ def removeImports(source: str):
     tree = ast.parse(source)
     for node in ast.walk(tree):
         if isinstance(node, ast.Import) or isinstance(node, ast.ImportFrom):
-            tree.body.remove(node)
+            if node in tree.body:
+                tree.body.remove(node)
     return ast.unparse(tree)    
 
 def removeComments(source: str):
@@ -250,7 +251,8 @@ def getParameters(pbt):
     for node in ast.walk(tree):
         if isinstance(node, ast.FunctionDef):
             temp = list(map(lambda x: x.arg, node.args.posonlyargs + node.args.args))
-            temp.remove("self") # Should stay in case the SUT is a class method
+            if "self" in temp:
+                temp.remove("self") # Should stay in case the SUT is a class method
             return temp
 
 def makeCustomGenerators(customArgStrategyZip, sutName):
@@ -341,6 +343,59 @@ def getEvaluatedSouceList(sutNames, sutSourceList):
         result += [env[name]]
 
     return result
+
+
+def processDiffPathSameDest(pbt, moduleName, functionName):
+    nameOfFuncToRemove = "test_identity_binary_operation_" + functionName
+    tempImports = ""
+
+    tree = ast.parse(pbt)
+    for node in ast.walk(tree):
+        # Fish out imports
+        if isinstance(node, ast.Import) or isinstance(node, ast.ImportFrom):
+            tempImports += ast.unparse(node) + "\n"
+            tree.body.remove(node)
+        else:
+            # TODO: Replace "auxiliary" with moduleName 
+            if isinstance(node, ast.Name) and node.id == "auxiliary":
+                node.id = moduleName
+
+            # TODO: Remove test_identity_binary_operation_*sutName* function
+            if isinstance(node, ast.FunctionDef) and node.name == nameOfFuncToRemove:
+                tree.body.remove(node)
+
+            # Add "self" arg to pbt
+            elif isinstance(node, ast.FunctionDef):
+                test = ast.arg()
+                test.arg = "self"
+                node.args.args = [test] + node.args.args
+    
+    # make import structure
+    importStruct = makeImportStructure(tempImports)
+    for entry in importStruct.getEntries():
+        if entry.module.str == "auxiliary":
+            entry.module.str = moduleName
+    
+    newImports = importStruct.toSource() + "\n"
+
+
+    # TODO: Put all that in a class
+    tempPbt = ast.unparse(tree)
+    tempPbtWithClass = []
+    className = "TestDifferentPathSameDestination" + functionName.capitalize()
+    tempPbtWithClass += ["class " + className + "(unittest.TestCase):\n"]
+
+    # Add indented content
+    for i in tempPbt.split("\n"):
+        tempPbtWithClass += ["\t" + i]
+
+    result = newImports
+    result += "\n".join(tempPbtWithClass)
+
+
+    return result
+    
+
 
 
     
