@@ -223,14 +223,14 @@ export async function deactivate(): Promise<void> {
 
 async function getPbtTypes(): Promise<void> {
     const result = (await lsClient?.sendRequest('custom/getPbtTypes', {})) as any;
-    pbtTypes = await result.stdout;
+    pbtTypes = await result.pbtTypes;
     console.log(pbtTypes);
     return;
 }
 
 async function getDefinedFunctions(source: string): Promise<[{ name: string; lineStart: number; lineEnd: number }]> {
     const response: any = await lsClient?.sendRequest('custom/getDefinedFunctionsFromFile', { source: source });
-    const definedFunctions = await response.stdout.map((cell: any) => {
+    const definedFunctions = await response.functions.map((cell: any) => {
         return {
             label: cell.name,
             detail: 'line ' + cell.lineStart.toString() + '-' + cell.lineEnd.toString(),
@@ -387,6 +387,5 @@ async function refreshFileContents() {
         await vscode.workspace.openTextDocument(uri).then((newDocument) => {
             vscode.window.showTextDocument(newDocument, viewColumn);
         });
-        vscode.window.showInformationMessage('File contents refreshed.');
     }
 }

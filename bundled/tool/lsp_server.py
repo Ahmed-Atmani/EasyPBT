@@ -120,13 +120,20 @@ def on_test_command(params: Optional[Any] = None):
 @LSP_SERVER.feature(lsp.CUSTOM_GET_PBT_TYPES)
 def on_get_pbt_types_command(params: Optional[Any] = None):
     """Returns a JSON-RPC response with a list of all PBT types"""
-    return utils.RunResult(pbtTypes, "")
+    result = {}
+    result["isError"] = False
+    result["pbtTypes"] = pbtTypes
+    return result
 
 
 @LSP_SERVER.feature(lsp.CUSTOM_GET_ALL_DEFINED_FUNCTIONS_FROM_FILE)
 def on_get_all_defined_functions_from_file(params: Optional[Any] = None):
     """Returns a JSON-RPC response with a list of all defined functions from given file"""
-    return utils.RunResult(_get_functions_from_source(params.source), "")
+    functions = _get_functions_from_source(params.source)
+    result = {}
+    result["isError"] = False
+    result["functions"] = functions
+    return result
 
 @LSP_SERVER.feature(lsp.CUSTOM_GENERATE_PBT)
 def on_generate_PBT(params: Optional[Any] = None):
@@ -148,7 +155,7 @@ def on_generate_PBT(params: Optional[Any] = None):
     sutNames = list(map(lambda f: f.name, functions))
     sutSourceList = getSutSourceList(source, sutNames)
     print("\n\nSOURCELIST: ", sutSourceList)
-    (isError, pbt) = _get_PBT(sutNames, sutSourceList, pbtType.typeId)
+    (isError, pbt) = _get_PBT(sutNames, sutSourceList, pbtType, moduleName, list(map(lambda f: f.name, functions)))
 
     # Return error
     if isError:
@@ -360,7 +367,44 @@ def _get_settings_by_document(document: workspace.Document | None):
 # *****************************************************
 # Internal execution APIs.
 # *****************************************************
-def _get_PBT(sutNames, sutSourceList, pbtTypeId: PbtTypeId):
+
+def getPbtUsingCli(moduleName, functionNames, pbtType = "") -> utils.RunResult:
+    """Runs Hypothesis' ghostwriter and sends the output back to the client
+    Returns: (ISeRROR, PBT | ERROR)"""
+
+    # === Create command
+    argv = TOOL_NAME + TOOL_ARGS # e.g. ["hypothesis", "write"]
+
+    # Add PBT type (if applicable)
+    if pbtType != "":
+        argv += [pbtType] # adds e.g. '--roundtrip'
+
+    # Add all functions to test
+    for f in functionNames:
+        argv += [moduleName + "." + f]
+
+    print("COMMAND: " + str(argv))
+
+    # === Run the command
+    settings = copy.deepcopy(_get_settings_by_document(None))
+    cwd = settings["workspaceFS"]
+    result = utils.run_path(argv=argv, use_stdin=True, cwd=cwd)
+
+    # === Check for error/output
+    pbt = result.stdout
+    error = result.stderr
+    isError = False
+
+    if error:
+        log_error(error)
+        isError = True
+
+    log_to_output(f"\r\n{pbt}\r\n")
+
+    return (isError, pbt if not isError else error)
+
+
+def _get_PBT(sutNames, sutSourceList, pbtType, moduleName, functionNames):
     """Runs Hypothesis' ghostwriter and sends the output back to the client"""
 
     # === Create function objects
@@ -372,15 +416,17 @@ def _get_PBT(sutNames, sutSourceList, pbtTypeId: PbtTypeId):
     pbt = ""
     isError = False
 
-    match pbtTypeId:
+    match pbtType.typeId:
 
         ### == Supported by Hypothesis Ghostwriter
         case PbtTypeId.DIFF_PATH_SAME_DEST: # binary_operation (with only associativity enabled)
             pass
 
         case PbtTypeId.ROUNDTRIP.value: # roundtrip
-            pbt = gw.roundtrip(*evaluatedSouceList)
-            print("\n\nROUNDTRIP: ", pbt)
+            # pbt = gw.roundtrip(*evaluatedSouceList)
+            # print("\n\nROUNDTRIP: ", pbt)
+            isError, pbt = getPbtUsingCli(moduleName, functionNames, pbtType.argument)
+
             pass
 
         case PbtTypeId.TEST_ORACLE.value: # equivalent
@@ -418,11 +464,7 @@ def _get_PBT(sutNames, sutSourceList, pbtTypeId: PbtTypeId):
     else:
         log_to_output(f"\r\n{pbt}\r\n")
 
-    result = {}
-    result["isError"] = isError
-    result["pbt"] = pbt
-
-    return result
+    return isError, pbt
 
 
 def _get_functions_from_source(source: str):
