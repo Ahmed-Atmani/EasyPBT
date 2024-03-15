@@ -159,7 +159,9 @@ def replaceNothingPlaceholder(pbt: str):
     def replace(match):
         return makeStrategyPlaceholder()
 
-    return re.sub(r"st\.nothing\(\)", replace, pbt) + "\n\n"
+    result = re.sub(r"st\.nothing\(\)", replace, pbt) + "\n\n"
+    result = result.replace("'", "")
+    return result
 
 def makeImportStructure(source: str) -> ImportStructure:
     """Returns the import structure of a Python source file"""
@@ -219,6 +221,19 @@ def getArgsFromPbt(pbt):
     tree = ast.parse(pbt)
     givenNode = getGivenNode(tree)
     args = list(map(lambda keyword: keyword.arg, givenNode.keywords))
+
+    return args
+
+def getArgsFromSut(sut):
+    def getFunctionNode(tree):
+        for node in ast.walk(tree):
+            if isinstance(node, ast.FunctionDef):
+                # print("func: ", node.func, " ## ", "keywords: ", node.keywords, " ## " "args: ", node.args, " ## " "type: ", type(node))
+                return node
+    
+    tree = ast.parse(sut)
+    functionNode = getFunctionNode(tree)
+    args = list(map(lambda arg: arg.arg, functionNode.args.args))
 
     return args
 
@@ -395,6 +410,45 @@ def processDiffPathSameDest(pbt, moduleName, functionName):
 
     return result
     
+
+def makeWithinExpectedBoundsSnippet(source, moduleName, functionName):
+    # Add imports
+    tempPbt = "from hypothesis import given, strategies as st\nimport " + moduleName + "\n\n"
+
+    # Add wrapper class
+    className = "TestWithinExpectedBounds" + functionName.capitalize()
+    tempPbt += "class " + className + "(unittest.TestCase):\n\n\t"
+
+    # Add @given decorator
+    tempPbt += "@given("
+    args = getArgsFromSut(source)
+    for arg in args:
+        tempPbt += arg + "=st.nothing(), "
+    tempPbt = tempPbt[:-2]
+    tempPbt += ")\n\t"
+
+    # Add pbt
+    tempPbt += "def test_within_expected_bounds_" + functionName + "("
+    for arg in args:
+        tempPbt += arg + ", "
+    tempPbt = tempPbt[:-2]
+    tempPbt += "):\n\t\t"
+
+    argCounter = len(args) + 1
+    tempPbt += "lowerBound, upperBound = '${" + str(argCounter) + ":lowerBound}', '${"
+    argCounter += 1
+    tempPbt +=  str(argCounter) + ":upperBound}'\n\t\t"
+
+    tempPbt += "output = " + moduleName + "." + functionName + "("
+    for arg in args:
+        tempPbt += arg + "=" + arg + ", "
+    tempPbt = tempPbt[:-2]
+    tempPbt += ")\n\t\t"
+
+    tempPbt += "assert lowerBound <= output and output <= upperBound\n"
+
+    return tempPbt
+
 
 
 

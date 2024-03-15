@@ -427,25 +427,19 @@ def _get_PBT(sutNames, sutSourceList, pbtType, moduleName, functionNames):
             pass
 
         case PbtTypeId.ROUNDTRIP.value: # roundtrip
-            # pbt = gw.roundtrip(*evaluatedSouceList)
-            # print("\n\nROUNDTRIP: ", pbt)
             isError, pbt = getPbtUsingCli(moduleName, functionNames, pbtType.argument)
-
             pass
 
         case PbtTypeId.TEST_ORACLE.value: # equivalent
             isError, pbt = getPbtUsingCli(moduleName, functionNames, pbtType.argument)
-
             pass
 
         case PbtTypeId.MODEL_BASED.value: # equivalent
             isError, pbt = getPbtUsingCli(moduleName, functionNames, pbtType.argument)
-
             pass
 
         case PbtTypeId.THE_MORE_THINGS_CHANGE.value: # idempotent
             isError, pbt = getPbtUsingCli(moduleName, functionNames, pbtType.argument)
-
             pass
 
         ### == Partially supported by Hypothesis Ghostwriter
@@ -463,9 +457,11 @@ def _get_PBT(sutNames, sutSourceList, pbtType, moduleName, functionNames):
             pass
 
         case PbtTypeId.WITHIN_EXPECTED_BOUNDS.value: # add bounds assertions
+            pbt = makeWithinExpectedBoundsSnippet(sutSourceList[0], moduleName, functionNames[0])
             pass
 
         case PbtTypeId.UNKNOWN.value: # magic
+            isError, pbt = getPbtUsingCli(moduleName, functionNames, pbtType.argument)
             pass
 
     if isError:
