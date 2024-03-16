@@ -309,6 +309,8 @@ def addCustomStrategyPlaceholders(pbt, argNames, strategiesNames):
             if isinstance(node.func.value, ast.Name) and node.func.value.id == "st" and node.func.attr == "nothing":
                 node.func = makeStrategyCall(strategiesNames[0]).func
                 strategiesNames = strategiesNames[1:]
+                if strategiesNames == []:
+                    break
 
     return ast.unparse(tree)
             
@@ -450,10 +452,179 @@ def makeWithinExpectedBoundsSnippet(source, moduleName, functionName):
     return tempPbt
 
 
+def makeSomeThingsNeverChangeSnippet(source, moduleName, functionName):
+    # Add imports
+    tempPbt = "from hypothesis import given, strategies as st\nimport " + moduleName + "\n\n"
 
+    # Add wrapper class
+    className = "TestSomeThingsNeverChange" + functionName.capitalize()
+    tempPbt += "class " + className + "(unittest.TestCase):\n\n\t"
 
+    # Add @given decorator
+    tempPbt += "@given("
+    args = getArgsFromSut(source)
+    for arg in args:
+        tempPbt += arg + "=st.nothing(), "
+    tempPbt = tempPbt[:-2]
+    tempPbt += ")\n\t"
+
+    # Add pbt
+    tempPbt += "def test_some_things_never_change_" + functionName + "("
+    for arg in args:
+        tempPbt += arg + ", "
+    tempPbt = tempPbt[:-2]
+    tempPbt += "):\n\t\t"
+
+    tempPbt += "output = " + moduleName + "." + functionName + "("
+    for arg in args:
+        tempPbt += arg + "=" + arg + ", "
+    tempPbt = tempPbt[:-2]
+    tempPbt += ")\n\t\t"
+
+    tempPbt += "assert ("
+    for arg in args:
+        tempPbt += arg + ", "
+    tempPbt = tempPbt[:-2]
+    tempPbt += ") == output\n"
+
+    return tempPbt
+
+def makeHardToProveEasyToVerifySnippet(sutSource, moduleName, sutName, testerName):
+    # Add imports
+    tempPbt = "from hypothesis import given, strategies as st\nimport " + moduleName + "\n\n"
+
+    # Add wrapper class
+    className = "TestHardToProveEasyToVerify" + sutName.capitalize()
+    tempPbt += "class " + className + "(unittest.TestCase):\n\n\t"
+
+    # Add @given decorator
+    tempPbt += "@given("
+    args = getArgsFromSut(sutSource)
+    for arg in args:
+        tempPbt += arg + "=st.nothing(), "
+    tempPbt = tempPbt[:-2]
+    tempPbt += ")\n\t"
+
+    # Add pbt
+    tempPbt += "def test_hard_to_prove_easy_to_verify_" + sutName + "("
+    for arg in args:
+        tempPbt += arg + ", "
+    tempPbt = tempPbt[:-2]
+    tempPbt += "):\n\t\t"
+
+    tempPbt += "output = " + moduleName + "." + sutName + "("
+    for arg in args:
+        tempPbt += arg + "=" + arg + ", "
+    tempPbt = tempPbt[:-2]
+    tempPbt += ")\n\t\t"
+
+    tempPbt += "assert " + moduleName + "." + testerName + "(output) == True\n"
+
+    return tempPbt
     
+def makeSolveSmallerProblemFirstSnippet(sutSource, moduleName, functionName):
+    # Add imports
+    tempPbt = "from hypothesis import given, strategies as st\nimport " + moduleName + "\n\n"
 
+    # Add wrapper class
+    className = "TestSolveSmallerProblemFirst" + functionName.capitalize()
+    tempPbt += "class " + className + "(unittest.TestCase):\n\n\t"
+
+
+    ### TODO: ADD aux funcs
+    tempPbt += "def isCorrect(self, element):\n\t\t"
+    args = getArgsFromSut(sutSource)
+    counter = len(args) + 1
+    tempPbt += "'${" + str(counter) + ":enter code here to test an element}'\n\t\tpass\n\t\n\t"
+    counter += 1
+
+    tempPbt += "def isDone(self, element):\n\t\t"
+    tempPbt += "'${" + str(counter) + ":enter code here that returns True if the element is empty}'\n\t\tpass\n\t\n\t"
+    counter += 1
+
+    tempPbt += "def getNextElement(self, element):\n\t\t"
+    tempPbt += "'${" + str(counter) + ":enter code here that returns the next element}'\n\t\tpass\n\t\n\t"
+    counter += 1
+
+    # Add @given decorator
+    tempPbt += "@given("
+    args = getArgsFromSut(sutSource)
+    for arg in args:
+        tempPbt += arg + "=st.nothing(), "
+    tempPbt = tempPbt[:-2]
+    tempPbt += ")\n\t"
+
+    # Add pbt
+    tempPbt += "def test_solve_smaller_problem_first_" + functionName + "(self, "
+    for arg in args:
+        tempPbt += arg + ", "
+    tempPbt = tempPbt[:-2]
+    tempPbt += "):\n\t\t"
+
+    tempPbt += "output = " + moduleName + "." + functionName + "("
+    for arg in args:
+        tempPbt += arg + "=" + arg + ", "
+    tempPbt = tempPbt[:-2]
+    tempPbt += ")\n\t\t\n\t\t"
+
+    tempPbt += "currentElement = output\n\t\t"
+    tempPbt += "while not self.isDone(currentElement):\n\t\t\t"
+    tempPbt += "assert self.isCorrect(currentElement)\n\t\t\t"
+    tempPbt += "currentElement = self.getNextElement(currentElement)\n"
+
+    return tempPbt
+
+def makeMetamorphicPropertySnippet(sutSource, moduleName, sutName, testerName):
+    # Add imports
+    tempPbt = "from hypothesis import given, strategies as st\nimport " + moduleName + "\n\n"
+
+    # Add wrapper class
+    className = "TestMetamorphicProperty" + sutName.capitalize()
+    tempPbt += "class " + className + "(unittest.TestCase):\n\n\t"
+
+    ### TODO: ADD aux funcs
+    tempPbt += "def testMetamorphicProperty(self, sutOutput, oracleOutput, extraArg):\n\t\t"
+    args = getArgsFromSut(sutSource) + ["extraArg"]
+    counter = len(args) + 1
+    tempPbt += '"""Compare the outputs based on the metamorphic property"""\n\t\t'
+    tempPbt += "return '${" + str(counter) + ":sutOutput(extraArg) == oracleOutput(extraArg)}'\n\t\n\t"
+    counter += 1
+
+    # Add @given decorator
+    tempPbt += "@given("
+    args = getArgsFromSut(sutSource) + ["extraArg"]
+    for arg in args:
+        tempPbt += arg + "=st.nothing(), "
+    tempPbt = tempPbt[:-2]
+    tempPbt += ")\n\t"
+
+    # Add pbt
+    tempPbt += "def test_metamorphic_property_" + sutName + "(self, "
+    for arg in args:
+        tempPbt += arg + ", "
+    tempPbt = tempPbt[:-2]
+    tempPbt += "):\n\t\t"
+
+    args = getArgsFromSut(sutSource)
+    tempPbt += "sutOutput = " + moduleName + "." + sutName + "("
+    for arg in args:
+        tempPbt += arg + "=" + arg + ", "
+    tempPbt = tempPbt[:-2]
+    tempPbt += ")\n\t\t"
+
+    tempPbt += "oracleOutput = " + moduleName + "." + testerName + "("
+    for arg in args:
+        tempPbt += arg + "=" + arg + ", "
+    tempPbt = tempPbt[:-2]
+    tempPbt += ")\n\n\t\t"
+
+    tempPbt += '\'"""Adding arguments should also be added to the @given decorator, this function and isCorrect"""\'\n\t\t'
+    tempPbt += "extraArguments = [extraArg]\n\t\t"
+    tempPbt += "isCorrect = self.testMetamorphicProperty(sutOutput, oracleOutput, *extraArguments)\n\n\t\t"
+    
+    tempPbt += "assert isCorrect == True\n"
+
+    return tempPbt
 
 
 # Test expression

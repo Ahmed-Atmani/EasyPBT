@@ -55,7 +55,7 @@ pbtTypes = [
         "name": 'Hard to Prove, Easy to Verify',
         "description": 'Tests the output of a function using a predefined predicate [e.g. isCorrect(solution)]',
         "argument": '--equivalent',
-        "twoFunctions": False
+        "twoFunctions": True
     },
     {
         "typeId": PbtTypeId.TEST_ORACLE,

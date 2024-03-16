@@ -443,17 +443,21 @@ def _get_PBT(sutNames, sutSourceList, pbtType, moduleName, functionNames):
             pass
 
         ### == Partially supported by Hypothesis Ghostwriter
-        case PbtTypeId.SOME_THINGS_NEVER_CHANGE.value: # Based on idempotent (input musn't be changed)
+        case PbtTypeId.SOME_THINGS_NEVER_CHANGE.value: # Based on idempotent (input mustn't be changed)
+            pbt = makeSomeThingsNeverChangeSnippet(sutSourceList[0], moduleName, functionNames[0])
             pass
 
         case PbtTypeId.METAMORPHIC_PROP.value: # Based on equivalent (add extra step to test e.g. compiler output instead of compiler itself)
+            pbt = makeMetamorphicPropertySnippet(sutSourceList[0], moduleName, functionNames[0], functionNames[1])
             pass
 
         ### == Not supported by Hypothesis Ghostwriter
         case PbtTypeId.SOLVE_SMALLER_PROBLEM_FIRST.value: # 
+            pbt = makeSolveSmallerProblemFirstSnippet(sutSourceList[0], moduleName, functionNames[0])
             pass
 
         case PbtTypeId.HARD_TO_PROVE.value: # add dummy strategy and dummy checker predicate
+            pbt = makeHardToProveEasyToVerifySnippet(sutSourceList[0], moduleName, functionNames[0], functionNames[1])
             pass
 
         case PbtTypeId.WITHIN_EXPECTED_BOUNDS.value: # add bounds assertions
