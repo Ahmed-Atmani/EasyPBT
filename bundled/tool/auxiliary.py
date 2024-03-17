@@ -415,7 +415,7 @@ def processDiffPathSameDest(pbt, moduleName, functionName):
 
 def makeWithinExpectedBoundsSnippet(source, moduleName, functionName):
     # Add imports
-    tempPbt = "from hypothesis import given, strategies as st\nimport " + moduleName + "\n\n"
+    tempPbt = "import unittest\nfrom hypothesis import given, strategies as st\nimport " + moduleName + "\n\n"
 
     # Add wrapper class
     className = "TestWithinExpectedBounds" + functionName.capitalize()
@@ -454,7 +454,7 @@ def makeWithinExpectedBoundsSnippet(source, moduleName, functionName):
 
 def makeSomeThingsNeverChangeSnippet(source, moduleName, functionName):
     # Add imports
-    tempPbt = "from hypothesis import given, strategies as st\nimport " + moduleName + "\n\n"
+    tempPbt = "import unittest\nfrom hypothesis import given, strategies as st\nimport " + moduleName + "\n\n"
 
     # Add wrapper class
     className = "TestSomeThingsNeverChange" + functionName.capitalize()
@@ -491,7 +491,7 @@ def makeSomeThingsNeverChangeSnippet(source, moduleName, functionName):
 
 def makeHardToProveEasyToVerifySnippet(sutSource, moduleName, sutName, testerName):
     # Add imports
-    tempPbt = "from hypothesis import given, strategies as st\nimport " + moduleName + "\n\n"
+    tempPbt = "import unittest\nfrom hypothesis import given, strategies as st\nimport " + moduleName + "\n\n"
 
     # Add wrapper class
     className = "TestHardToProveEasyToVerify" + sutName.capitalize()
@@ -524,7 +524,7 @@ def makeHardToProveEasyToVerifySnippet(sutSource, moduleName, sutName, testerNam
     
 def makeSolveSmallerProblemFirstSnippet(sutSource, moduleName, functionName):
     # Add imports
-    tempPbt = "from hypothesis import given, strategies as st\nimport " + moduleName + "\n\n"
+    tempPbt = "import unittest\nfrom hypothesis import given, strategies as st\nimport " + moduleName + "\n\n"
 
     # Add wrapper class
     className = "TestSolveSmallerProblemFirst" + functionName.capitalize()
@@ -576,7 +576,7 @@ def makeSolveSmallerProblemFirstSnippet(sutSource, moduleName, functionName):
 
 def makeMetamorphicPropertySnippet(sutSource, moduleName, sutName, testerName):
     # Add imports
-    tempPbt = "from hypothesis import given, strategies as st\nimport " + moduleName + "\n\n"
+    tempPbt = "import unittest\nfrom hypothesis import given, strategies as st\nimport " + moduleName + "\n\n"
 
     # Add wrapper class
     className = "TestMetamorphicProperty" + sutName.capitalize()

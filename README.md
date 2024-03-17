@@ -29,11 +29,14 @@ How to Use
     ![alt text](images/5-Command-add-example.gif)
 
 
+All the tests for functions in a file (e.g. fileName.py) will be put on a separate file with the following naming pattern: fileName_test.py 
+
 Requirements
 ------------
 
 1. VS Code 1.64.0 or greater
 1. Python 3.8 or greater
-1. node >= 18.17.0
-1. npm >= 8.19.0 (`npm` is installed with node, check npm version, use `npm install -g npm@8.3.0` to update)
 1. Python extension for VS Code
+1. The following pip packages:
+    - hypothesis
+    - black

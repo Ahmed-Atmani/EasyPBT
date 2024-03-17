@@ -186,7 +186,7 @@ def on_generate_PBT(params: Optional[Any] = None):
     newTestFileContents = rewriteImports(testFileContents, newImports) + "\n\n"
 
     # === Write to test file
-    testFile = open(testFileName, "w")
+    testFile = open(testFileName, "w+")
     testFile.write(newTestFileContents)
     testFile.close()
 
