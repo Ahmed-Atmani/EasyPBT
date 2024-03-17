@@ -1,3 +1,7 @@
-# Change Log
+Change Log
+==========
 
--   Release information can be added here or can be tracked via github release.
+Version 0.1
+-----------
+
+-   Initial release
