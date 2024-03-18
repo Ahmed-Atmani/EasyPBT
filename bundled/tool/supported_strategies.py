@@ -12,6 +12,7 @@
 supportedStrategies = {
     "integers": "st.integers()",
     "integers_bounded": "st.integers(min_value=-10\, max_value=10)",
+    "floats": "st.floats(allow_infinity=False\, allow_nan=False)",
     "decimals": "st.decimals()",
     "strings": "st.text()",
     "strings_bounded": "st.text(min_size=0\, max_size=10)",

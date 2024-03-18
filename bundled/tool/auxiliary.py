@@ -430,7 +430,7 @@ def makeWithinExpectedBoundsSnippet(source, moduleName, functionName):
     tempPbt += ")\n\t"
 
     # Add pbt
-    tempPbt += "def test_within_expected_bounds_" + functionName + "("
+    tempPbt += "def test_within_expected_bounds_" + functionName + "(self, "
     for arg in args:
         tempPbt += arg + ", "
     tempPbt = tempPbt[:-2]

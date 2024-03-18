@@ -86,7 +86,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
         pbtSnippet = result2.pbtSnippet;
 
-        await refreshFileContents();
+        // await refreshFileContents();
 
         // await addPbtToEditor(pbt, selectedFunctions[0].lineEnd + 1); // Adds pbt under the (first) function
 

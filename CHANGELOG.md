@@ -1,6 +1,13 @@
 Change Log
 ==========
 
+Version 0.1.4
+-------------
+
+-   Fixed bug in which the current file is closed after generating a PBT
+-   Fixed PBTs of type "Within Expected Bounds" not running
+-   Added floats input generation strategy
+
 Version 0.1.3
 -------------
 
