@@ -44,6 +44,7 @@ update_sys_path(
 import lsp_jsonrpc as jsonrpc
 import lsp_utils as utils
 import lsprotocol.types as lsp
+import custom_commands as lspCustom
 from pygls import server, uris, workspace
 
 WORKSPACE_SETTINGS = {}
@@ -111,13 +112,7 @@ def on_shutdown(_params: Optional[Any] = None) -> None:
     jsonrpc.shutdown_json_rpc()
 
 
-@LSP_SERVER.feature(lsp.CUSTOM_TEST_COMMAND)
-def on_test_command(params: Optional[Any] = None):
-    """Handles the execution of the test command"""
-    return {"stdout": "this is a test response"}
-
-
-@LSP_SERVER.feature(lsp.CUSTOM_GET_PBT_TYPES)
+@LSP_SERVER.feature(lspCustom.CUSTOM_GET_PBT_TYPES)
 def on_get_pbt_types_command(params: Optional[Any] = None):
     """Returns a JSON-RPC response with a list of all PBT types"""
     result = {}
@@ -126,7 +121,7 @@ def on_get_pbt_types_command(params: Optional[Any] = None):
     return result
 
 
-@LSP_SERVER.feature(lsp.CUSTOM_GET_ALL_DEFINED_FUNCTIONS_FROM_FILE)
+@LSP_SERVER.feature(lspCustom.CUSTOM_GET_ALL_DEFINED_FUNCTIONS_FROM_FILE)
 def on_get_all_defined_functions_from_file(params: Optional[Any] = None):
     """Returns a JSON-RPC response with a list of all defined functions from given file"""
     functions = _get_functions_from_source(params.source)
@@ -135,7 +130,7 @@ def on_get_all_defined_functions_from_file(params: Optional[Any] = None):
     result["functions"] = functions
     return result
 
-@LSP_SERVER.feature(lsp.CUSTOM_GENERATE_PBT)
+@LSP_SERVER.feature(lspCustom.CUSTOM_GENERATE_PBT)
 def on_generate_PBT(params: Optional[Any] = None):
     """Returns a JSON-RPC response with the generated PBT"""
 
@@ -209,7 +204,7 @@ def on_generate_PBT(params: Optional[Any] = None):
 
     return result
 
-@LSP_SERVER.feature(lsp.CUSTOM_GENERATE_SNIPPET)
+@LSP_SERVER.feature(lspCustom.CUSTOM_GENERATE_SNIPPET)
 def on_make_snippet(params: Optional[Any] = None):
     pbt = params.pbt
     customArgStrategyZip = params.customArgStrategyZip
@@ -233,7 +228,7 @@ def on_make_snippet(params: Optional[Any] = None):
 
     return result
 
-@LSP_SERVER.feature(lsp.CUSTOM_GENERATE_EXAMPLE)
+@LSP_SERVER.feature(lspCustom.CUSTOM_GENERATE_EXAMPLE)
 def on_make_example(params: Optional[Any]=None):
     selectedPbt = params.selectedFunction[0]
     pbtSource = params.pbtSource

@@ -3,7 +3,7 @@
     "displayName": "EasyPBT",
     "description": "Easily generate property-based tests for your Python projects using EasyPBT.",
     "icon": "./images/EasyPBT_icon_128.png",
-    "version": "0.1.2",
+    "version": "0.1.3",
     "preview": true,
     "serverInfo": {
         "name": "EasyPBT",
