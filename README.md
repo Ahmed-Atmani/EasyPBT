@@ -29,14 +29,20 @@ How to Use
     ![alt text](images/5-Command-add-example.gif)
 
 
-All the tests for functions in a file (e.g. fileName.py) will be put on a separate file with the following naming pattern: fileName_test.py 
+All tests will be put in a separate file with the following name pattern by default: `*_test.py`.
+This can easily be changed in the setting with the following ID: `easypbt.testFileNamePattern`.
 
 Requirements
 ------------
 
 1. VS Code 1.64.0 or greater
 1. Python 3.8 or greater
-1. Python extension for VS Code
+1. Python extension for VS Code (automatically installed when installing our extension)
 1. The following pip packages:
     - hypothesis
     - black
+
+To install these pip packages, execute this command on your terminal:
+```bash
+pip install hypothesis black
+```

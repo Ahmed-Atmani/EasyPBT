@@ -146,6 +146,10 @@ def on_generate_PBT(params: Optional[Any] = None):
     filePath = params.filePath
     testFileNamePattern = params.testFileNamePattern
 
+    testFileNamePattern = _get_global_defaults()["testFileNamePattern"]
+    if testFileNamePattern == "":
+        testFileNamePattern = "_test"
+
     # === Generate PBT 
     # Run ghostwriter
     fileName = os.path.basename(filePath)
