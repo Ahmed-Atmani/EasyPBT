@@ -14,7 +14,9 @@ import traceback
 from typing import Any, Optional, Sequence
 
 from pbt_types import *
-from auxiliary import *
+from auxiliary_files.other import *
+from auxiliary_files.snippet_generators import *
+
 import ast
 import hypothesis.extra.ghostwriter as gw
 
