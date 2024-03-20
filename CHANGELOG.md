@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+Version 0.1.5
+-------------
+
+-   Fixed error when trying to generate a PBT for a class method
+-   Refactored code
+
 Version 0.1.4
 -------------
 

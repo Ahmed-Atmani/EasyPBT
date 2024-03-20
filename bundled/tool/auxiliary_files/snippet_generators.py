@@ -68,7 +68,7 @@ def processDiffPathSameDest(pbt, moduleName, functionName):
     # Put all that in a class
     tempPbt = ast.unparse(tree)
     tempPbtWithClass = []
-    className = "TestDifferentPathSameDestination" + functionName.capitalize()
+    className = "TestDifferentPathSameDestination" + functionName.replace('.', '_').capitalize()
     tempPbtWithClass += ["class " + className + "(unittest.TestCase):\n"]
 
     # Add indented content
@@ -86,7 +86,7 @@ def makeWithinExpectedBoundsSnippet(source, moduleName, functionName):
     tempPbt = "import unittest\nfrom hypothesis import given, strategies as st\nimport " + moduleName + "\n\n"
 
     # Add wrapper class
-    className = "TestWithinExpectedBounds" + functionName.capitalize()
+    className = "TestWithinExpectedBounds" + functionName.replace('.', '_').capitalize()
     tempPbt += "class " + className + "(unittest.TestCase):\n\n\t"
 
     # Add @given decorator
@@ -98,7 +98,7 @@ def makeWithinExpectedBoundsSnippet(source, moduleName, functionName):
     tempPbt += ")\n\t"
 
     # Add pbt
-    tempPbt += "def test_within_expected_bounds_" + functionName + "(self, "
+    tempPbt += "def test_within_expected_bounds_" + functionName.replace('.', '_') + "(self, "
     for arg in args:
         tempPbt += arg + ", "
     tempPbt = tempPbt[:-2]
@@ -125,7 +125,7 @@ def makeSomeThingsNeverChangeSnippet(source, moduleName, functionName):
     tempPbt = "import unittest\nfrom hypothesis import given, strategies as st\nimport " + moduleName + "\n\n"
 
     # Add wrapper class
-    className = "TestSomeThingsNeverChange" + functionName.capitalize()
+    className = "TestSomeThingsNeverChange" + functionName.replace('.', '_').capitalize()
     tempPbt += "class " + className + "(unittest.TestCase):\n\n\t"
 
     # Add @given decorator
@@ -157,12 +157,13 @@ def makeSomeThingsNeverChangeSnippet(source, moduleName, functionName):
 
     return tempPbt
 
+
 def makeHardToProveEasyToVerifySnippet(sutSource, moduleName, sutName, testerName):
     # Add imports
     tempPbt = "import unittest\nfrom hypothesis import given, strategies as st\nimport " + moduleName + "\n\n"
 
     # Add wrapper class
-    className = "TestHardToProveEasyToVerify" + sutName.capitalize()
+    className = "TestHardToProveEasyToVerify" + sutName.replace('.', '_').capitalize()
     tempPbt += "class " + className + "(unittest.TestCase):\n\n\t"
 
     # Add @given decorator
@@ -174,13 +175,13 @@ def makeHardToProveEasyToVerifySnippet(sutSource, moduleName, sutName, testerNam
     tempPbt += ")\n\t"
 
     # Add pbt
-    tempPbt += "def test_hard_to_prove_easy_to_verify_" + sutName + "("
+    tempPbt += "def test_hard_to_prove_easy_to_verify_" + sutName.replace('.', '_') + "(self, "
     for arg in args:
         tempPbt += arg + ", "
     tempPbt = tempPbt[:-2]
     tempPbt += "):\n\t\t"
 
-    tempPbt += "output = " + moduleName + "." + sutName + "("
+    tempPbt += "output = " + moduleName + "." + sutName.replace('.', '_') + "("
     for arg in args:
         tempPbt += arg + "=" + arg + ", "
     tempPbt = tempPbt[:-2]
@@ -190,12 +191,13 @@ def makeHardToProveEasyToVerifySnippet(sutSource, moduleName, sutName, testerNam
 
     return tempPbt
     
+
 def makeSolveSmallerProblemFirstSnippet(sutSource, moduleName, functionName):
     # Add imports
     tempPbt = "import unittest\nfrom hypothesis import given, strategies as st\nimport " + moduleName + "\n\n"
 
     # Add wrapper class
-    className = "TestSolveSmallerProblemFirst" + functionName.capitalize()
+    className = "TestSolveSmallerProblemFirst" + functionName.replace('.', '_').capitalize()
     tempPbt += "class " + className + "(unittest.TestCase):\n\n\t"
 
 
@@ -223,7 +225,7 @@ def makeSolveSmallerProblemFirstSnippet(sutSource, moduleName, functionName):
     tempPbt += ")\n\t"
 
     # Add pbt
-    tempPbt += "def test_solve_smaller_problem_first_" + functionName + "(self, "
+    tempPbt += "def test_solve_smaller_problem_first_" + functionName.replace('.', '_') + "(self, "
     for arg in args:
         tempPbt += arg + ", "
     tempPbt = tempPbt[:-2]
@@ -242,12 +244,13 @@ def makeSolveSmallerProblemFirstSnippet(sutSource, moduleName, functionName):
 
     return tempPbt
 
+
 def makeMetamorphicPropertySnippet(sutSource, moduleName, sutName, testerName):
     # Add imports
     tempPbt = "import unittest\nfrom hypothesis import given, strategies as st\nimport " + moduleName + "\n\n"
 
     # Add wrapper class
-    className = "TestMetamorphicProperty" + sutName.capitalize()
+    className = "TestMetamorphicProperty" + sutName.replace('.', '_').capitalize()
     tempPbt += "class " + className + "(unittest.TestCase):\n\n\t"
 
     # Add auxiliary functions
@@ -267,7 +270,7 @@ def makeMetamorphicPropertySnippet(sutSource, moduleName, sutName, testerName):
     tempPbt += ")\n\t"
 
     # Add pbt
-    tempPbt += "def test_metamorphic_property_" + sutName + "(self, "
+    tempPbt += "def test_metamorphic_property_" + sutName.replace('.', '_') + "(self, "
     for arg in args:
         tempPbt += arg + ", "
     tempPbt = tempPbt[:-2]
@@ -293,4 +296,3 @@ def makeMetamorphicPropertySnippet(sutSource, moduleName, sutName, testerName):
     tempPbt += "assert isCorrect == True\n"
 
     return tempPbt
-

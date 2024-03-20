@@ -53,8 +53,6 @@ class ImportEntry:
         return self.module.str == __value.module.str
 
         
-
-        
 class ImportStructure:
     def __init__(self) -> None:
         self.structure: dict[str: ImportEntry] = {}

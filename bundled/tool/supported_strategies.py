@@ -1,13 +1,3 @@
-# supportedStrategies = {
-#     "integers": "st.integers()",
-#     "decimals": "st.decimals()",
-#     "characters": "st.characters()",
-#     "strings": "st.text()",
-#     "booleans": "st.booleans()",
-#     "lists": "st.list()",
-# }
-
-
 # Do not forget to add a '\' before a comma in the strategies!
 supportedStrategies = {
     "integers": "st.integers()",
