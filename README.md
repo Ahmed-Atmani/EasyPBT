@@ -28,9 +28,14 @@ How to Use
 
     ![alt text](images/5-Command-add-example.gif)
 
+----
+
+The `EasyPBT: Generate PBT for selected function(s)` command works just like above, except that the function to test has to be selected in the editor.
 
 All tests will be put in a separate file with the following name pattern by default: `*_test.py`.
 This can easily be changed in the setting with the following ID: `easypbt.testFileNamePattern`.
+
+
 
 Requirements
 ------------
@@ -46,3 +51,36 @@ To install these pip packages, execute this command on your terminal:
 ```bash
 pip install hypothesis black
 ```
+
+Contribution and Development Setup Instructions
+-----------------------------------------------
+
+### Setup
+
+Before cloning the repository, make sure your computer has the following installed:
+- VS Code 1.64.0 or greater
+- Python 3.8 or greater
+- node >= 18.17.0
+- npm >= 8.19.0 (`npm` is installed with node, check npm version, use `npm install -g npm@8.3.0` to update)
+- Python extension for VS Code
+1. The following pip packages:
+    - hypothesis
+    - black
+    - nox
+
+To install these pip packages, execute this command on your terminal:
+```bash
+pip install hypothesis black nox
+```
+
+After cloning this repository, follow the steps below to setup the development environment:
+1. Create a Python virtual environment `python -m venv .venv`
+1. Activate the virtual environment:
+    - Linux & MacOS: `source .venv/bin/activate`
+    - Windows: `.venv/Scripts/Activate`
+1. Install all python packages in the virtual environment: `pip install -r src/test/python_tests/requirements.txt`
+1. Run the following command to setup nox: `nox --session setup`
+1. Install all npm packages: `npm install`
+
+### Debugging
+To run for debugging, open the repo in a vscode window and press F5. This will open a new window with the experimental extension loaded. 

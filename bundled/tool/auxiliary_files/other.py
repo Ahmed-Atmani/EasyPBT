@@ -200,3 +200,14 @@ def getEvaluatedSouceList(sutNames, sutSourceList):
             result += [env[name]]
 
     return result
+
+def getSutNamesFromSelection(selectedCode):
+    tree = ast.parse(selectedCode)
+
+    sutNames = []
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef):
+            sutNames += [node.name]
+    
+    return sutNames

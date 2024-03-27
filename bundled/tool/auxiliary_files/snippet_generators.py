@@ -205,15 +205,15 @@ def makeSolveSmallerProblemFirstSnippet(sutSource, moduleName, functionName):
     tempPbt += "def isCorrect(self, element):\n\t\t"
     args = getArgsFromSut(sutSource)
     counter = len(args) + 1
-    tempPbt += "'${" + str(counter) + ":enter code here to test an element}'\n\t\tpass\n\t\n\t"
+    tempPbt += '"""Tests the current element"""\n\t\t\'${' + str(counter) + ':pass}\'\n\t\n\t'
     counter += 1
 
     tempPbt += "def isDone(self, element):\n\t\t"
-    tempPbt += "'${" + str(counter) + ":enter code here that returns True if the element is empty}'\n\t\tpass\n\t\n\t"
+    tempPbt += '"""Returns true if element is empty"""\n\t\t\'${' + str(counter) + ':pass}\'\n\t\n\t'
     counter += 1
 
     tempPbt += "def getNextElement(self, element):\n\t\t"
-    tempPbt += "'${" + str(counter) + ":enter code here that returns the next element}'\n\t\tpass\n\t\n\t"
+    tempPbt += '"""Returns the next element}"""\n\t\t\'${' + str(counter) + ':pass}\'\n\t\n\t'
     counter += 1
 
     # Add @given decorator

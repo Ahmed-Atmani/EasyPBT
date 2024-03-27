@@ -40,107 +40,22 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const serverId = serverInfo.module;
 
     // === Generate PBT
-    const generatePbtCommand = vscode.commands.registerCommand(`${serverId}.generatePbt`, async () => {
-        // == Prompt PBT type
-        const selectedType = await promptPbtType();
-
-        console.log('Selected type: ');
-        console.log(selectedType);
-
-        // == Prompt SUT;
-        const selectedFunctions = await promptFunctionsToTest(selectedType.twoFunctions);
-
-        console.log('Selected functions: ');
-        console.log(selectedFunctions);
-
-        // == Get Source
-        const source = vscode.window.activeTextEditor?.document.getText();
-        const filePath = vscode.window.activeTextEditor?.document.fileName;
-
-        // == Generate PBT
-        const result: any = await lsClient?.sendRequest('custom/generatePBT', {
-            functions: selectedFunctions,
-            pbtType: selectedType,
-            source: source,
-            filePath: filePath,
-            testFileNamePattern: testFileNamePattern,
-        });
-
-        console.log('RESULT: ');
-        console.log(result);
-
-        const isError: boolean = result.isError;
-        var pbtSnippet = result.pbtSnippet;
-        const testFileName: string = result.testFileName;
-        const functionParameters = result.functionParameters;
-        const pbt = result.pbt;
-        const functions = result.functions;
-
-        const customArgStrategyZip = await promptArgsCustomStrategy(functionParameters);
-
-        const result2: any = await lsClient?.sendRequest('custom/generateSnippet', {
-            pbt: pbt,
-            customArgStrategyZip: customArgStrategyZip,
-            functions: functions,
-        });
-
-        pbtSnippet = result2.pbtSnippet;
-
-        // await refreshFileContents();
-
-        // await addPbtToEditor(pbt, selectedFunctions[0].lineEnd + 1); // Adds pbt under the (first) function
-
-        // == Insert PBT snippet at the end of the test file
-        const testDocument = await vscode.workspace.openTextDocument(vscode.Uri.file(testFileName));
-        const editor = await vscode.window.showTextDocument(testDocument);
-        const document: any = editor.document;
-        const lastLine = document.lineAt(document.lineCount - 1);
-        const endPosition = new vscode.Position(document.lineCount - 1, lastLine.range.end.character); // Adjusted position
-        const selection = new vscode.Selection(endPosition, endPosition);
-        await editor.insertSnippet(new vscode.SnippetString(pbtSnippet), selection);
-    });
+    const generatePbtCommand = vscode.commands.registerCommand(
+        `${serverId}.generatePbt`,
+        async () => await getPbt(false),
+    );
     context.subscriptions.push(generatePbtCommand);
 
-    const generateExampleCommand = vscode.commands.registerCommand(`${serverId}.generateExample`, async () => {
-        // == Prompt SUT;
-        const selectedFunction = await promptFunctionsToTest(false);
+    // === Generate PBT for Selected Function(s)
+    const generatePbtSelectionCommand = vscode.commands.registerCommand(
+        `${serverId}.generatePbtSelection`,
+        async () => await getPbt(true),
+    );
+    context.subscriptions.push(generatePbtSelectionCommand);
 
-        console.log('Selected function: ');
-        console.log(selectedFunction);
-
-        // == Get Source
-        const pbtSource = vscode.window.activeTextEditor?.document.getText();
-        const pbtFilePath = vscode.window.activeTextEditor?.document.fileName;
-
-        // == Generate PBT
-        const result: any = await lsClient?.sendRequest('custom/generateExample', {
-            selectedFunction: selectedFunction,
-            pbtSource: pbtSource,
-            pbtFilePath: pbtFilePath,
-        });
-
-        const isError: boolean = result.isError;
-        var exampleSnippet = result.exampleSnippet;
-        const line = result.line - 3;
-        const column = result.column;
-        const refresh = result.refresh;
-
-        console.log('Snippet: ' + exampleSnippet);
-        console.log('location: ' + [line, column]);
-
-        if (refresh) {
-            await refreshFileContents();
-        }
-
-        // == Insert snippet in the right place
-        const testDocument = await vscode.workspace.openTextDocument(vscode.Uri.file(pbtFilePath as string));
-        const editor = await vscode.window.showTextDocument(testDocument);
-        const document: any = editor.document;
-        const lastLine = document.lineAt(line);
-        const endPosition = new vscode.Position(line, lastLine.range.end.character); // Adjusted position
-        const selection = new vscode.Selection(endPosition, endPosition);
-        await editor.insertSnippet(new vscode.SnippetString(exampleSnippet), selection);
-    });
+    const generateExampleCommand = vscode.commands.registerCommand(`${serverId}.generateExample`, async () =>
+        generateExample(),
+    );
     context.subscriptions.push(generateExampleCommand);
 
     // Setup logging
@@ -219,6 +134,116 @@ export async function deactivate(): Promise<void> {
     if (lsClient) {
         await lsClient.stop();
     }
+}
+
+async function generateExample() {
+    // == Prompt SUT;
+    const selectedFunction = await promptFunctionsToTest(false);
+
+    console.log('Selected function: ');
+    console.log(selectedFunction);
+
+    // == Get Source
+    const pbtSource = vscode.window.activeTextEditor?.document.getText();
+    const pbtFilePath = vscode.window.activeTextEditor?.document.fileName;
+
+    // == Generate PBT
+    const result: any = await lsClient?.sendRequest('custom/generateExample', {
+        selectedFunction: selectedFunction,
+        pbtSource: pbtSource,
+        pbtFilePath: pbtFilePath,
+    });
+
+    const isError: boolean = result.isError;
+    var exampleSnippet = result.exampleSnippet;
+    const line = result.line - 3;
+    const column = result.column;
+    const refresh = result.refresh;
+
+    console.log('Snippet: ' + exampleSnippet);
+    console.log('location: ' + [line, column]);
+
+    if (refresh) {
+        await refreshFileContents();
+    }
+
+    // == Insert snippet in the right place
+    const testDocument = await vscode.workspace.openTextDocument(vscode.Uri.file(pbtFilePath as string));
+    const editor = await vscode.window.showTextDocument(testDocument);
+    const document: any = editor.document;
+    const lastLine = document.lineAt(line);
+    const endPosition = new vscode.Position(line, lastLine.range.end.character); // Adjusted position
+    const selection = new vscode.Selection(endPosition, endPosition);
+    await editor.insertSnippet(new vscode.SnippetString(exampleSnippet), selection);
+}
+
+async function getPbt(useSelection: boolean): Promise<void> {
+    // == Prompt PBT type
+    const selectedType = await promptPbtType();
+
+    console.log('Selected type: ');
+    console.log(selectedType);
+
+    // == Prompt SUT;
+    var selectedFunctions = null;
+    if (!useSelection) {
+        selectedFunctions = await promptFunctionsToTest(selectedType.twoFunctions);
+        console.log('Selected functions: ');
+        console.log(selectedFunctions);
+    }
+
+    // == Get Source
+    const source = vscode.window.activeTextEditor?.document.getText();
+    const filePath = vscode.window.activeTextEditor?.document.fileName;
+
+    // == Get Selected code
+    var editor2 = vscode.window.activeTextEditor;
+    var selectedCode = '';
+    if (editor2) {
+        selectedCode = editor2.document.getText(editor2.selection);
+    }
+
+    // == Generate PBT
+    const result: any = await lsClient?.sendRequest('custom/generatePBT', {
+        functions: selectedFunctions,
+        pbtType: selectedType,
+        source: source,
+        filePath: filePath,
+        testFileNamePattern: testFileNamePattern,
+        useSelection: useSelection,
+        selectedCode: selectedCode,
+    });
+
+    console.log('RESULT: ');
+    console.log(result);
+
+    const isError: boolean = result.isError;
+    var pbtSnippet = result.pbtSnippet;
+    const testFileName: string = result.testFileName;
+    const functionParameters = result.functionParameters;
+    const pbt = result.pbt;
+    const functions = result.functions;
+
+    const customArgStrategyZip = await promptArgsCustomStrategy(functionParameters);
+
+    const result2: any = await lsClient?.sendRequest('custom/generateSnippet', {
+        pbt: pbt,
+        customArgStrategyZip: customArgStrategyZip,
+        functions: functions,
+        useSelection: useSelection,
+        selectedCode: selectedCode,
+    });
+
+    pbtSnippet = result2.pbtSnippet;
+
+    // == Insert PBT snippet at the end of the test file
+    const testDocument = await vscode.workspace.openTextDocument(vscode.Uri.file(testFileName));
+    const editor = await vscode.window.showTextDocument(testDocument);
+    const document: any = editor.document;
+    const lastLine = document.lineAt(document.lineCount - 1);
+    const endPosition = new vscode.Position(document.lineCount - 1, lastLine.range.end.character); // Adjusted position
+    const selection = new vscode.Selection(endPosition, endPosition);
+    await editor.insertSnippet(new vscode.SnippetString(pbtSnippet), selection);
 }
 
 async function getPbtTypes(): Promise<void> {

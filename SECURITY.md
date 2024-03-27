@@ -1,8 +1,3 @@
-
----
-
-** Content below this line is the Security information for the template itself **
-
 <!-- BEGIN MICROSOFT SECURITY.MD V0.0.7 BLOCK -->
 
 ## Security

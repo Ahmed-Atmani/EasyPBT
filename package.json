@@ -3,7 +3,7 @@
     "displayName": "EasyPBT",
     "description": "Easily generate property-based tests for your Python projects using EasyPBT.",
     "icon": "./images/EasyPBT_icon_128.png",
-    "version": "0.1.5",
+    "version": "0.1.6",
     "preview": true,
     "serverInfo": {
         "name": "EasyPBT",
@@ -145,6 +145,11 @@
                 "title": "Generate PBT...",
                 "category": "EasyPBT",
                 "command": "easypbt.generatePbt"
+            },
+            {
+                "title": "Generate PBT for selected function(s)",
+                "category": "EasyPBT",
+                "command": "easypbt.generatePbtSelection"
             },
             {
                 "title": "Add explicit set of values to be generated",

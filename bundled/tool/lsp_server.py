@@ -142,6 +142,8 @@ def on_generate_PBT(params: Optional[Any] = None):
     source = params.source
     filePath = params.filePath
     testFileNamePattern = params.testFileNamePattern
+    useSelection = params.useSelection
+    selectedCode = params.selectedCode
 
     testFileNamePattern = _get_global_defaults()["testFileNamePattern"]
     if testFileNamePattern == "":
@@ -153,10 +155,16 @@ def on_generate_PBT(params: Optional[Any] = None):
     moduleName = fileName[:-3]
     # (isError, pbt) = _get_PBT(moduleName, list(map(lambda f: f.name, functions)), pbtType)
     
-    sutNames = list(map(lambda f: f.name, functions))
+    # Get function names
+    sutNames = []
+    if useSelection:
+        sutNames = getSutNamesFromSelection(selectedCode)
+    else:
+        sutNames = list(map(lambda f: f.name, functions))
+    
     sutSourceList = getSutSourceList(source, sutNames)
     print("\n\nSOURCELIST: ", sutSourceList)
-    (isError, pbt) = _get_PBT(sutNames, sutSourceList, pbtType, moduleName, list(map(lambda f: f.name, functions)))
+    (isError, pbt) = _get_PBT(sutNames, sutSourceList, pbtType, moduleName)
 
     # Return error
     if isError:
@@ -211,6 +219,8 @@ def on_make_snippet(params: Optional[Any] = None):
     pbt = params.pbt
     customArgStrategyZip = params.customArgStrategyZip
     functions = params.functions
+    useSelection = params.useSelection
+    selectedCode = params.selectedCode
 
     # Get functions that need strategy
     customStrategyFunctions = []
@@ -218,7 +228,11 @@ def on_make_snippet(params: Optional[Any] = None):
         if needsCustomStrategy:
             customStrategyFunctions += [name]
 
-    sutName = list(map(lambda f: f[0], functions))[0]
+    sutNames = ""
+    if useSelection:
+        sutName = getSutNamesFromSelection(selectedCode)[0]
+    else:
+        sutName = list(map(lambda f: f.name, functions))[0]
 
     strategiesString, argNames, strategiesNames = makeCustomGenerators(customArgStrategyZip, sutName)
     finalPbt = addCustomStrategyPlaceholders(removeImports(pbt), argNames, strategiesNames)
@@ -405,7 +419,7 @@ def getPbtUsingCli(moduleName, functionNames, pbtType = "") -> utils.RunResult:
     return (isError, pbt if not isError else error)
 
 
-def _get_PBT(sutNames, sutSourceList, pbtType, moduleName, functionNames):
+def _get_PBT(sutNames, sutSourceList, pbtType, moduleName):
     """Runs Hypothesis' ghostwriter and sends the output back to the client"""
 
     # === Create function objects
@@ -424,49 +438,49 @@ def _get_PBT(sutNames, sutSourceList, pbtType, moduleName, functionNames):
         ### == Supported by Hypothesis Ghostwriter
         case PbtTypeId.DIFF_PATH_SAME_DEST.value: # binary_operation (with only associativity enabled)
             temp = gw.binary_operation(*evaluatedSouceList, commutative=True, identity=False, associative=False)
-            pbt = processDiffPathSameDest(temp, moduleName, functionNames[0])
+            pbt = processDiffPathSameDest(temp, moduleName, sutNames[0])
             pass
 
         case PbtTypeId.ROUNDTRIP.value: # roundtrip
-            isError, pbt = getPbtUsingCli(moduleName, functionNames, pbtType.argument)
+            isError, pbt = getPbtUsingCli(moduleName, sutNames, pbtType.argument)
             pass
 
         case PbtTypeId.TEST_ORACLE.value: # equivalent
-            isError, pbt = getPbtUsingCli(moduleName, functionNames, pbtType.argument)
+            isError, pbt = getPbtUsingCli(moduleName, sutNames, pbtType.argument)
             pass
 
         case PbtTypeId.MODEL_BASED.value: # equivalent
-            isError, pbt = getPbtUsingCli(moduleName, functionNames, pbtType.argument)
+            isError, pbt = getPbtUsingCli(moduleName, sutNames, pbtType.argument)
             pass
 
         case PbtTypeId.THE_MORE_THINGS_CHANGE.value: # idempotent
-            isError, pbt = getPbtUsingCli(moduleName, functionNames, pbtType.argument)
+            isError, pbt = getPbtUsingCli(moduleName, sutNames, pbtType.argument)
             pass
 
         ### == Partially supported by Hypothesis Ghostwriter
         case PbtTypeId.SOME_THINGS_NEVER_CHANGE.value: # Based on idempotent (input mustn't be changed)
-            pbt = makeSomeThingsNeverChangeSnippet(sutSourceList[0], moduleName, functionNames[0])
+            pbt = makeSomeThingsNeverChangeSnippet(sutSourceList[0], moduleName, sutNames[0])
             pass
 
         case PbtTypeId.METAMORPHIC_PROP.value: # Based on equivalent (add extra step to test e.g. compiler output instead of compiler itself)
-            pbt = makeMetamorphicPropertySnippet(sutSourceList[0], moduleName, functionNames[0], functionNames[1])
+            pbt = makeMetamorphicPropertySnippet(sutSourceList[0], moduleName, sutNames[0], sutNames[1])
             pass
 
         ### == Not supported by Hypothesis Ghostwriter
         case PbtTypeId.SOLVE_SMALLER_PROBLEM_FIRST.value: # 
-            pbt = makeSolveSmallerProblemFirstSnippet(sutSourceList[0], moduleName, functionNames[0])
+            pbt = makeSolveSmallerProblemFirstSnippet(sutSourceList[0], moduleName, sutNames[0])
             pass
 
         case PbtTypeId.HARD_TO_PROVE.value: # add dummy strategy and dummy checker predicate
-            pbt = makeHardToProveEasyToVerifySnippet(sutSourceList[0], moduleName, functionNames[0], functionNames[1])
+            pbt = makeHardToProveEasyToVerifySnippet(sutSourceList[0], moduleName, sutNames[0], sutNames[1])
             pass
 
         case PbtTypeId.WITHIN_EXPECTED_BOUNDS.value: # add bounds assertions
-            pbt = makeWithinExpectedBoundsSnippet(sutSourceList[0], moduleName, functionNames[0])
+            pbt = makeWithinExpectedBoundsSnippet(sutSourceList[0], moduleName, sutNames[0])
             pass
 
         case PbtTypeId.UNKNOWN.value: # magic
-            isError, pbt = getPbtUsingCli(moduleName, functionNames, pbtType.argument)
+            isError, pbt = getPbtUsingCli(moduleName, sutNames, pbtType.argument)
             pass
 
     if isError:
