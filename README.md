@@ -5,6 +5,8 @@ It is based on [Microsoft's VSCode Python Tool Extension template](https://githu
 
 This project was developed as part of a bachelor thesis project at [Vrije Universiteit Brussel](https://www.vub.be/en).
 
+The colors used in the icon of this extension is inspired by Hypothesis' and Python's logo. 
+
 
 How to Use
 ----------
