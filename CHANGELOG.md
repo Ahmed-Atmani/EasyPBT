@@ -1,6 +1,15 @@
 Change Log
 ==========
 
+Version 0.1.7
+-------------
+
+-   Fixed some generated PBTs not being correct 
+-   Improved the generated templated for the following types:
+    -   Different path, same destination
+    -   The more things change, the more they stay the same
+
+
 Version 0.1.6
 -------------
 

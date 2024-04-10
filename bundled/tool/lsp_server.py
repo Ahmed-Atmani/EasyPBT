@@ -232,7 +232,8 @@ def on_make_snippet(params: Optional[Any] = None):
     if useSelection:
         sutName = getSutNamesFromSelection(selectedCode)[0]
     else:
-        sutName = list(map(lambda f: f.name, functions))[0]
+        sutName = list(map(lambda f: f[0], functions))[0] # since functions magically gets turned into a list from ON_GENERATE_PBT to the client
+        # sutName = list(map(lambda f: f.name, functions))[0]
 
     strategiesString, argNames, strategiesNames = makeCustomGenerators(customArgStrategyZip, sutName)
     finalPbt = addCustomStrategyPlaceholders(removeImports(pbt), argNames, strategiesNames)
@@ -246,7 +247,7 @@ def on_make_snippet(params: Optional[Any] = None):
 
 @LSP_SERVER.feature(lspCustom.CUSTOM_GENERATE_EXAMPLE)
 def on_make_example(params: Optional[Any]=None):
-    selectedPbt = params.selectedFunction[0]
+    selectedPbt = params.selectedFunctions[0]
     pbtSource = params.pbtSource
     pbtFilePath = params.pbtFilePath
 
@@ -436,11 +437,6 @@ def _get_PBT(sutNames, sutSourceList, pbtType, moduleName):
     match pbtType.typeId:
 
         ### == Supported by Hypothesis Ghostwriter
-        case PbtTypeId.DIFF_PATH_SAME_DEST.value: # binary_operation (with only associativity enabled)
-            temp = gw.binary_operation(*evaluatedSouceList, commutative=True, identity=False, associative=False)
-            pbt = processDiffPathSameDest(temp, moduleName, sutNames[0])
-            pass
-
         case PbtTypeId.ROUNDTRIP.value: # roundtrip
             isError, pbt = getPbtUsingCli(moduleName, sutNames, pbtType.argument)
             pass
@@ -453,9 +449,6 @@ def _get_PBT(sutNames, sutSourceList, pbtType, moduleName):
             isError, pbt = getPbtUsingCli(moduleName, sutNames, pbtType.argument)
             pass
 
-        case PbtTypeId.THE_MORE_THINGS_CHANGE.value: # idempotent
-            isError, pbt = getPbtUsingCli(moduleName, sutNames, pbtType.argument)
-            pass
 
         ### == Partially supported by Hypothesis Ghostwriter
         case PbtTypeId.SOME_THINGS_NEVER_CHANGE.value: # Based on idempotent (input mustn't be changed)
@@ -466,7 +459,17 @@ def _get_PBT(sutNames, sutSourceList, pbtType, moduleName):
             pbt = makeMetamorphicPropertySnippet(sutSourceList[0], moduleName, sutNames[0], sutNames[1])
             pass
 
+
         ### == Not supported by Hypothesis Ghostwriter
+        case PbtTypeId.THE_MORE_THINGS_CHANGE.value: # idempotent
+            # isError, pbt = getPbtUsingCli(moduleName, sutNames, pbtType.argument)
+            pbt = makeTheMoreThingsChangeSnippet(sutSourceList[0], moduleName, sutNames[0])
+            pass
+        
+        case PbtTypeId.DIFF_PATH_SAME_DEST.value: # binary_operation (with only associativity enabled)
+            pbt = makeDiffPathSameDestSnippet(sutSourceList[0], moduleName, sutNames[0])
+            pass
+
         case PbtTypeId.SOLVE_SMALLER_PROBLEM_FIRST.value: # 
             pbt = makeSolveSmallerProblemFirstSnippet(sutSourceList[0], moduleName, sutNames[0])
             pass
@@ -479,6 +482,7 @@ def _get_PBT(sutNames, sutSourceList, pbtType, moduleName):
             pbt = makeWithinExpectedBoundsSnippet(sutSourceList[0], moduleName, sutNames[0])
             pass
 
+        ### == Unknown property
         case PbtTypeId.UNKNOWN.value: # magic
             isError, pbt = getPbtUsingCli(moduleName, sutNames, pbtType.argument)
             pass

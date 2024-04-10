@@ -138,10 +138,10 @@ export async function deactivate(): Promise<void> {
 
 async function generateExample() {
     // == Prompt SUT;
-    const selectedFunction = await promptFunctionsToTest(false);
+    const selectedFunctions = await promptFunctionsToTest(false);
 
-    console.log('Selected function: ');
-    console.log(selectedFunction);
+    console.log('Selected functions: ');
+    console.log(selectedFunctions);
 
     // == Get Source
     const pbtSource = vscode.window.activeTextEditor?.document.getText();
@@ -149,7 +149,7 @@ async function generateExample() {
 
     // == Generate PBT
     const result: any = await lsClient?.sendRequest('custom/generateExample', {
-        selectedFunction: selectedFunction,
+        selectedFunctions: selectedFunctions,
         pbtSource: pbtSource,
         pbtFilePath: pbtFilePath,
     });

@@ -106,7 +106,7 @@ def getParameters(pbt):
 
 def makeCustomGenerators(customArgStrategyZip, sutName):
     def createCustomStrategy(argName):
-        strategyName = "strategyFor_" + argName + "_in_" + sutName
+        strategyName = "strategyFor_" + argName + "_in_" + sutName.replace('.', '_').capitalize()
         strategy = "def " + strategyName + "():\n\t"
         strategy += "return st.nothing()\n\n"
         return strategy, strategyName

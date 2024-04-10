@@ -32,8 +32,10 @@ def addCustomStrategyPlaceholders(pbt, argNames, strategiesNames):
             
 
 def processDiffPathSameDest(pbt, moduleName, functionName):
-    nameOfFuncToRemove = "test_identity_binary_operation_" + functionName
+    nameOfFuncToRemove = "test_identity_binary_operation_" + functionName.split('.')[0]
     tempImports = ""
+
+    pbt = pbt.replace("auxiliary_files.other", moduleName)
 
     tree = ast.parse(pbt)
     for node in ast.walk(tree):
@@ -42,9 +44,9 @@ def processDiffPathSameDest(pbt, moduleName, functionName):
             tempImports += ast.unparse(node) + "\n"
             tree.body.remove(node)
         else:
-            # Replace "auxiliary" with moduleName 
-            if isinstance(node, ast.Name) and node.id == "auxiliary":
-                node.id = moduleName
+            # # Replace "auxiliary" with moduleName
+            # if isinstance(node, ast.Name) and node.id == "auxiliary_files":
+            #     node.id = moduleName
 
             # Remove test_identity_binary_operation_*sutName* function
             if isinstance(node, ast.FunctionDef) and node.name == nameOfFuncToRemove:
@@ -100,7 +102,8 @@ def makeWithinExpectedBoundsSnippet(source, moduleName, functionName):
     # Add pbt
     tempPbt += "def test_within_expected_bounds_" + functionName.replace('.', '_') + "(self, "
     for arg in args:
-        tempPbt += arg + ", "
+        if arg != "self":
+            tempPbt += arg + ", "
     tempPbt = tempPbt[:-2]
     tempPbt += "):\n\t\t"
 
@@ -137,9 +140,10 @@ def makeSomeThingsNeverChangeSnippet(source, moduleName, functionName):
     tempPbt += ")\n\t"
 
     # Add pbt
-    tempPbt += "def test_some_things_never_change_" + functionName + "("
+    tempPbt += "def test_some_things_never_change_" + functionName.replace('.', '_') + "(self,"
     for arg in args:
-        tempPbt += arg + ", "
+        if arg != "self":
+            tempPbt += arg + ", "
     tempPbt = tempPbt[:-2]
     tempPbt += "):\n\t\t"
 
@@ -177,17 +181,18 @@ def makeHardToProveEasyToVerifySnippet(sutSource, moduleName, sutName, testerNam
     # Add pbt
     tempPbt += "def test_hard_to_prove_easy_to_verify_" + sutName.replace('.', '_') + "(self, "
     for arg in args:
-        tempPbt += arg + ", "
+        if arg != "self":
+            tempPbt += arg + ", "
     tempPbt = tempPbt[:-2]
     tempPbt += "):\n\t\t"
 
-    tempPbt += "output = " + moduleName + "." + sutName.replace('.', '_') + "("
+    tempPbt += "solution = " + moduleName + "." + sutName.replace('.', '_') + "("
     for arg in args:
         tempPbt += arg + "=" + arg + ", "
     tempPbt = tempPbt[:-2]
     tempPbt += ")\n\t\t"
 
-    tempPbt += "assert " + moduleName + "." + testerName + "(output) == True\n"
+    tempPbt += "assert " + moduleName + "." + testerName + "(solution) == True\n"
 
     return tempPbt
     
@@ -227,7 +232,8 @@ def makeSolveSmallerProblemFirstSnippet(sutSource, moduleName, functionName):
     # Add pbt
     tempPbt += "def test_solve_smaller_problem_first_" + functionName.replace('.', '_') + "(self, "
     for arg in args:
-        tempPbt += arg + ", "
+        if arg != "self":
+            tempPbt += arg + ", "
     tempPbt = tempPbt[:-2]
     tempPbt += "):\n\t\t"
 
@@ -272,7 +278,8 @@ def makeMetamorphicPropertySnippet(sutSource, moduleName, sutName, testerName):
     # Add pbt
     tempPbt += "def test_metamorphic_property_" + sutName.replace('.', '_') + "(self, "
     for arg in args:
-        tempPbt += arg + ", "
+        if arg != "self":
+            tempPbt += arg + ", "
     tempPbt = tempPbt[:-2]
     tempPbt += "):\n\t\t"
 
@@ -294,5 +301,87 @@ def makeMetamorphicPropertySnippet(sutSource, moduleName, sutName, testerName):
     tempPbt += "isCorrect = self.testMetamorphicProperty(sutOutput, oracleOutput, *extraArguments)\n\n\t\t"
     
     tempPbt += "assert isCorrect == True\n"
+
+    return tempPbt
+
+def makeDiffPathSameDestSnippet(source, moduleName, functionName):
+    # Add imports
+    tempPbt = "import unittest\nfrom hypothesis import given, strategies as st\nimport " + moduleName + "\n\n"
+
+    # Add wrapper class
+    className = "TestDiffPathSameDest" + functionName.replace('.', '_').capitalize()
+    tempPbt += "class " + className + "(unittest.TestCase):\n\n\t"
+
+    # Add @given decorator
+    tempPbt += "@given("
+    args = getArgsFromSut(source)
+    for arg in args:
+        tempPbt += arg + "=st.nothing(), "
+    tempPbt = tempPbt[:-2]
+    tempPbt += ")\n\t"
+
+    # Add pbt
+    tempPbt += "def test_different_path_same_destination_" + functionName.replace('.', '_') + "(self, "
+    for arg in args:
+        if arg != "self":
+            tempPbt += arg + ", "
+    tempPbt = tempPbt[:-2]
+    tempPbt += "):\n\t\t"
+
+    tempPbt += "right = " + moduleName + "." + functionName + "("
+    for arg in args:
+        tempPbt += arg + "=" + arg + ", "
+    tempPbt = tempPbt[:-2]
+    tempPbt += ")\n\t\t"
+
+    tempPbt += "left = " + moduleName + "." + functionName + "("
+    
+    tmpArgs = args.copy()
+    args.reverse()
+    reverseArgs = args.copy()
+    args = tmpArgs
+
+    for arg in reverseArgs:
+        tempPbt += arg + "=" + arg + ", "
+    tempPbt = tempPbt[:-2]
+    tempPbt += ")\n\t\t"
+
+    tempPbt += "assert left == right\n"
+
+    return tempPbt
+
+def makeTheMoreThingsChangeSnippet(source, moduleName, functionName):
+    # Add imports
+    tempPbt = "import unittest\nfrom hypothesis import given, strategies as st\nimport " + moduleName + "\n\n"
+
+    # Add wrapper class
+    className = "TestTheMoreThingsChange" + functionName.replace('.', '_').capitalize()
+    tempPbt += "class " + className + "(unittest.TestCase):\n\n\t"
+
+    # Add @given decorator
+    tempPbt += "@given("
+    args = getArgsFromSut(source)
+    for arg in args:
+        tempPbt += arg + "=st.nothing(), "
+    tempPbt = tempPbt[:-2]
+    tempPbt += ")\n\t"
+
+    # Add pbt
+    tempPbt += "def test_the_more_things_change_" + functionName.replace('.', '_') + "(self, "
+    for arg in args:
+        if arg != "self":
+            tempPbt += arg + ", "
+    tempPbt = tempPbt[:-2]
+    tempPbt += "):\n\t\t"
+
+    tempPbt += "first = " + moduleName + "." + functionName + "("
+    for arg in args:
+        tempPbt += arg + "=" + arg + ", "
+    tempPbt = tempPbt[:-2]
+    tempPbt += ")\n\t\t"
+
+    tempPbt += "second = " + moduleName + "." + functionName + "(first)\n\t\t"
+
+    tempPbt += "assert first == second\n"
 
     return tempPbt
