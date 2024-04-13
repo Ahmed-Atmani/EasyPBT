@@ -12,3 +12,4 @@ bundled/libs/
 **/.vs
 .hypothesis
 .vscode/*
+*.pdf

@@ -8,6 +8,7 @@ supportedStrategies = {
     "strings_bounded": "st.text(min_size=0\, max_size=10)",
     "booleans": "st.booleans()",
     "characters": "st.characters()",
+    "times": "st.times()",
     "lists_of_integers": "st.lists(st.integers())",
     "lists_of_strings": "st.lists(st.text())",
     "lists": "st.lists()",
