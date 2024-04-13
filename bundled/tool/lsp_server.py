@@ -302,6 +302,42 @@ def on_make_example(params: Optional[Any]=None):
 
     return result
 
+@LSP_SERVER.feature(lspCustom.CUSTOM_GET_TEMPLATE)
+def on_insert_snippet(params: Optional[Any]=None):
+    selectedType = params.selectedType
+    typeId = selectedType.typeId
+    typeName = selectedType.name
+
+    # Get all data necessary
+    sutNames = []
+    for name in [typeName, typeName + "2"]:
+        sutNames += [name.replace(' ', '_').replace(',', "").replace('.', '_')]
+
+    sutSourceList = [f"def {sutNames[0]}(arg):\n\tpass\n", f"def {sutNames[1]}(arg):\n\tpass\n"]
+    pbtType = selectedType
+    moduleName = "temp_module"
+
+    # Write source to temporary file (for ghostwriter CLI)
+    file = open(moduleName + ".py", "w+")
+    for f in sutSourceList:
+        file.write(f + "\n")
+    file.close()
+
+    # Get snippet
+    isError, snippet = _get_PBT(sutNames, sutSourceList, pbtType, moduleName)
+    
+    # Delete temporary file
+    os.remove(moduleName + ".py")
+
+    ## Final touches
+    snippet = snippet.replace(moduleName + ".", "").replace(f"import {moduleName}", "")
+    snippet = replaceNothingPlaceholder(snippet)
+
+    result = {}
+    result["isError"] = isError
+    result["snippet"] = snippet
+    return result
+
 
 
 def _get_global_defaults():
@@ -426,7 +462,7 @@ def _get_PBT(sutNames, sutSourceList, pbtType, moduleName):
     # === Create function objects
     # ghostwriter module only works with evaluated functions
     # ghostwriter cli only works with source strings (what we are currently working with)
-    evaluatedSouceList = getEvaluatedSouceList(sutNames, sutSourceList)
+    # evaluatedSouceList = getEvaluatedSouceList(sutNames, sutSourceList)
 
     # === Generate PBT
     pbt = ""

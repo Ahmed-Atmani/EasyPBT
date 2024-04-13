@@ -1,10 +1,19 @@
 Change Log
 ==========
 
+Version 0.1.9
+-------------
+
+-   Added `EasyPBT: Insert property template` command
+-   Improved the generated templated for the following types:
+    -   Mode-based testing
+
+
 Version 0.1.8
 -------------
 
 -   Added `st.times()` strategy as an option when selecting input generation strategy
+
 
 Version 0.1.7
 -------------

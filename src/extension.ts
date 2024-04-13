@@ -58,6 +58,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     );
     context.subscriptions.push(generateExampleCommand);
 
+    // === Insert Template
+    const insertTemplateCommand = vscode.commands.registerCommand(
+        `${serverId}.insertTemplate`,
+        async () => await insertTemplate(),
+    );
+    context.subscriptions.push(insertTemplateCommand);
+
     // Setup logging
     const outputChannel = createOutputChannel(serverName);
     context.subscriptions.push(outputChannel, registerLogger(outputChannel));
@@ -237,7 +244,11 @@ async function getPbt(useSelection: boolean): Promise<void> {
     pbtSnippet = result2.pbtSnippet;
 
     // == Insert PBT snippet at the end of the test file
-    const testDocument = await vscode.workspace.openTextDocument(vscode.Uri.file(testFileName));
+    await insertSnippetAtEndOfFile(pbtSnippet, testFileName);
+}
+
+async function insertSnippetAtEndOfFile(pbtSnippet: string, fileName: string) {
+    const testDocument = await vscode.workspace.openTextDocument(vscode.Uri.file(fileName));
     const editor = await vscode.window.showTextDocument(testDocument);
     const document: any = editor.document;
     const lastLine = document.lineAt(document.lineCount - 1);
@@ -413,4 +424,18 @@ async function refreshFileContents() {
             vscode.window.showTextDocument(newDocument, viewColumn);
         });
     }
+}
+
+async function insertTemplate() {
+    const selectedType = await promptPbtType();
+    const response: any = await lsClient?.sendRequest('custom/getTemplate', { selectedType: selectedType });
+    const snippet = response.snippet;
+
+    var currentFileName = '';
+    const editor = vscode.window.activeTextEditor;
+    if (editor) {
+        currentFileName = editor.document.fileName;
+    }
+
+    await insertSnippetAtEndOfFile(snippet, currentFileName);
 }

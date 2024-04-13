@@ -68,7 +68,7 @@ pbtTypes = [
         "typeId": PbtTypeId.MODEL_BASED,
         "name": 'Model Based',
         "description": 'Variant of test oracle, but a simpler version of the function is the reference [e.g. newFunc(x) == simplifiedFunc(x)]',
-        "argument": '',
+        "argument": '--equivalent',
         "twoFunctions": True
     },
     {

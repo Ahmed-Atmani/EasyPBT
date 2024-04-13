@@ -32,8 +32,13 @@ How to Use
 
 ----
 
-The `EasyPBT: Generate PBT for selected function(s)` command works just like above, except that the function to test has to be selected in the editor.
+Other Features
+--------------
+### Other commands
+- The `EasyPBT: Generate PBT for selected function(s)` command works just like above, except that the function to test has to be selected in the editor.
+- The `EasyPBT: Insert property template` command can be used to directly get a template for a type of property, in case one finds it easier.
 
+### Test File Name Pattern
 All tests will be put in a separate file with the following name pattern by default: `*_test.py`.
 This can easily be changed in the setting with the following ID: `easypbt.testFileNamePattern`.
 
