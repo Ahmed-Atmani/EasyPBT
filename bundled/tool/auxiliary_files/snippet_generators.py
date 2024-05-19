@@ -218,7 +218,7 @@ def makeSolveSmallerProblemFirstSnippet(sutSource, moduleName, functionName):
     counter += 1
 
     tempPbt += "def getNextElement(self, element):\n\t\t"
-    tempPbt += '"""Returns the next element}"""\n\t\t\'${' + str(counter) + ':pass}\'\n\t\n\t'
+    tempPbt += '"""Returns the next element"""\n\t\t\'${' + str(counter) + ':pass}\'\n\t\n\t'
     counter += 1
 
     # Add @given decorator

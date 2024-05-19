@@ -1,6 +1,12 @@
 Change Log
 ==========
 
+Version 0.1.10
+--------------
+
+-   Fixed small error in the comments of the generated test
+
+
 Version 0.1.9
 -------------
 
