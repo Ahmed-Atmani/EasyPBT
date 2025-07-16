@@ -1,5 +1,8 @@
 EasyPBT
 =======
+
+<img src="images/EasyPBT_icon.png" alt="EasyPBT Logo" width="200"/>
+
 EasyPBT is a VSCode extension that facilitates the writing of property-based tests (PBT) using the Hypothesis Python library. 
 It is based on [Microsoft's VSCode Python Tool Extension template](https://github.com/microsoft/vscode-python-tools-extension-template) that uses the [Language Server Protocol (LSP)](https://microsoft.github.io/language-server-protocol).
 
